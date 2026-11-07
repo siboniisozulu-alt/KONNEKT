@@ -10,48 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-const initialFollowers = [
-  {
-    id: '1',
-    name: 'Thando M',
-    username: '@thando_music',
-    avatar: '🎵',
-    verified: true,
-    followingBack: false,
-  },
-  {
-    id: '2',
-    name: 'Sipho Dlamini',
-    username: '@sipho_creates',
-    avatar: '🎬',
-    verified: false,
-    followingBack: true,
-  },
-  {
-    id: '3',
-    name: 'Lerato',
-    username: '@lerato_official',
-    avatar: '🌸',
-    verified: false,
-    followingBack: false,
-  },
-  {
-    id: '4',
-    name: 'Kasi Comedy',
-    username: '@kasi_comedy',
-    avatar: '😂',
-    verified: true,
-    followingBack: false,
-  },
-  {
-    id: '5',
-    name: 'Musa',
-    username: '@musa_za',
-    avatar: '🔥',
-    verified: false,
-    followingBack: true,
-  },
-];
+const initialFollowers = [];
 
 export default function FollowersScreen({ navigation }) {
   const [followers, setFollowers] = useState(initialFollowers);

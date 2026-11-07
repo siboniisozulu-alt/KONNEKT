@@ -9,19 +9,10 @@ import {
   Alert,
 } from 'react-native';
 
-const giftList = [
-  { id: '1', name: 'Heart', emoji: '❤️', price: 5 },
-  { id: '2', name: 'Rose', emoji: '🌹', price: 10 },
-  { id: '3', name: 'Coffee', emoji: '☕', price: 15 },
-  { id: '4', name: 'Crown', emoji: '👑', price: 50 },
-  { id: '5', name: 'Diamond', emoji: '💎', price: 100 },
-  { id: '6', name: 'Rocket', emoji: '🚀', price: 250 },
-  { id: '7', name: 'Lion', emoji: '🦁', price: 500 },
-  { id: '8', name: 'Superstar', emoji: '🌟', price: 1000 },
-];
+const giftList = [];
 
 export default function LiveStreamGiftsScreen({ navigation }) {
-  const [balance, setBalance] = useState(500);
+  const [balance] = useState(0);
   const [selectedGift, setSelectedGift] = useState(null);
   const [sentGifts, setSentGifts] = useState([]);
 
@@ -34,7 +25,7 @@ export default function LiveStreamGiftsScreen({ navigation }) {
     if (balance < selectedGift.price) {
       Alert.alert(
         'Insufficient coins',
-        'You do not have enough demo coins for this gift.'
+        'Gifts are not enabled yet. No coins or payments are available.'
       );
       return;
     }
@@ -112,7 +103,7 @@ export default function LiveStreamGiftsScreen({ navigation }) {
       <View style={styles.balanceCard}>
         <View>
           <Text style={styles.balanceLabel}>
-            YOUR DEMO BALANCE
+            GIFT BALANCE
           </Text>
 
           <Text style={styles.balanceAmount}>
@@ -183,8 +174,7 @@ export default function LiveStreamGiftsScreen({ navigation }) {
       </View>
 
       <Text style={styles.disclaimer}>
-        Demo coins have no cash value. Real purchases,
-        creator earnings and withdrawals are not enabled.
+        Virtual gifts and coin purchases are not enabled. No payments are processed.
       </Text>
     </View>
   );

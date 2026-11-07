@@ -10,53 +10,12 @@ import {
   Alert,
 } from 'react-native';
 
-const sampleContacts = [
-  {
-    id: '1',
-    name: 'Thabo Mokoena',
-    username: '@thabo',
-    phone: '+27 71 234 5678',
-    initials: 'TM',
-    onKonnekt: true,
-  },
-  {
-    id: '2',
-    name: 'Lerato Dlamini',
-    username: '@lerato',
-    phone: '+27 72 345 6789',
-    initials: 'LD',
-    onKonnekt: true,
-  },
-  {
-    id: '3',
-    name: 'Sipho Nkosi',
-    username: '@sipho',
-    phone: '+27 73 456 7890',
-    initials: 'SN',
-    onKonnekt: false,
-  },
-  {
-    id: '4',
-    name: 'Amahle Zulu',
-    username: '@amahle',
-    phone: '+27 74 567 8901',
-    initials: 'AZ',
-    onKonnekt: true,
-  },
-  {
-    id: '5',
-    name: 'Nomsa Khumalo',
-    username: '@nomsa',
-    phone: '+27 76 678 9012',
-    initials: 'NK',
-    onKonnekt: false,
-  },
-];
+const sampleContacts = [];
 
 export default function ContactsScreen({ navigation, route }) {
   const [search, setSearch] = useState('');
 
-  const contacts = route?.params?.contacts || sampleContacts;
+  const contacts = route?.params?.contacts || [];
 
   const filteredContacts = contacts.filter((contact) =>
     contact.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -159,7 +118,7 @@ export default function ContactsScreen({ navigation, route }) {
 
       <Text style={styles.footer}>
         Contact matching will require your permission and
-        secure phone-number matching. These contacts are demo data.
+        secure phone-number matching. Device contact matching is not connected. No contacts are being imported.
       </Text>
     </View>
   );

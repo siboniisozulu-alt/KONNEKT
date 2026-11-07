@@ -9,40 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 
-const demoMedia = [
-  {
-    id: '1',
-    title: 'Birthday celebration',
-    type: 'Photos',
-    icon: '🖼️',
-    date: 'Today',
-    sender: 'Thabo',
-  },
-  {
-    id: '2',
-    title: 'Weekend video',
-    type: 'Videos',
-    icon: '🎬',
-    date: 'Yesterday',
-    sender: 'Lerato',
-  },
-  {
-    id: '3',
-    title: 'Group plans.pdf',
-    type: 'Documents',
-    icon: '📄',
-    date: 'Monday',
-    sender: 'Sipho',
-  },
-  {
-    id: '4',
-    title: 'KONNEKT website',
-    type: 'Links',
-    icon: '🔗',
-    date: 'Tuesday',
-    sender: 'Nomsa',
-  },
-];
+const demoMedia = [];
 
 const categories = [
   'All',
@@ -54,13 +21,13 @@ const categories = [
 
 export default function GroupMediaScreen({ navigation, route }) {
   const group = route?.params?.group || {
-    name: 'KONNEKT Friends',
+    name: route?.params?.groupName || 'Group',
   };
 
   const [selectedCategory, setSelectedCategory] = useState('All');
 
   const [media, setMedia] = useState(
-    route?.params?.media || demoMedia
+    route?.params?.media || []
   );
 
   const filteredMedia =

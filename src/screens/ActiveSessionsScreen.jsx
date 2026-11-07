@@ -9,24 +9,7 @@ import {
   Alert,
 } from 'react-native';
 
-const initialSessions = [
-  {
-    id: '1',
-    device: 'This device',
-    model: 'Android phone',
-    location: 'Current session',
-    lastActive: 'Active now',
-    current: true,
-  },
-  {
-    id: '2',
-    device: 'Other Android device',
-    model: 'Android',
-    location: 'Unknown location',
-    lastActive: 'Yesterday',
-    current: false,
-  },
-];
+const initialSessions = [];
 
 export default function ActiveSessionsScreen({ navigation }) {
   const [sessions, setSessions] = useState(initialSessions);
@@ -195,7 +178,7 @@ export default function ActiveSessionsScreen({ navigation }) {
         </View>
 
         <Text style={styles.demoNote}>
-          Demonstration only: device sessions are sample data.
+          Device session management is not connected yet. This screen does not revoke active sessions.
           Real session tracking and remote sign-out require backend
           authentication and server-side token revocation.
         </Text>

@@ -9,38 +9,16 @@ import {
   Alert,
 } from 'react-native';
 
-const transactions = [
-  {
-    id: '1',
-    title: 'Live gift received',
-    description: 'Gift from Thando',
-    amount: 25,
-    date: 'Today',
-  },
-  {
-    id: '2',
-    title: 'Live gift received',
-    description: 'Gift from Lerato',
-    amount: 50,
-    date: 'Yesterday',
-  },
-  {
-    id: '3',
-    title: 'Video reward',
-    description: 'Demo content reward',
-    amount: 15,
-    date: 'Yesterday',
-  },
-];
+const transactions = [];
 
 export default function CreatorEarningsScreen({ navigation }) {
   const [selectedPeriod, setSelectedPeriod] = useState('7 days');
 
   // Demonstration figures only. No actual money is earned.
-  const demoBalance = 90;
-  const demoTotal = 450;
-  const demoGifts = 32;
-  const demoViews = 12500;
+  const demoBalance = 0;
+  const demoTotal = 0;
+  const demoGifts = 0;
+  const demoViews = 0;
 
   const requestWithdrawal = () => {
     Alert.alert(
@@ -73,17 +51,16 @@ export default function CreatorEarningsScreen({ navigation }) {
 
       <View style={styles.notice}>
         <Text style={styles.noticeTitle}>
-          DEMONSTRATION DASHBOARD
+          CREATOR EARNINGS
         </Text>
         <Text style={styles.noticeText}>
-          All amounts and transactions shown here are examples.
-          They are not actual earnings or available funds.
+          Earnings and payment features are not active yet. No money is being collected or paid out.
         </Text>
       </View>
 
       <View style={styles.balanceCard}>
         <Text style={styles.balanceLabel}>
-          DEMO AVAILABLE BALANCE
+          AVAILABLE BALANCE
         </Text>
 
         <Text style={styles.balanceAmount}>
@@ -91,7 +68,7 @@ export default function CreatorEarningsScreen({ navigation }) {
         </Text>
 
         <Text style={styles.balanceDescription}>
-          Sample balance — not withdrawable
+          No verified earnings yet
         </Text>
 
         <TouchableOpacity
@@ -157,7 +134,7 @@ export default function CreatorEarningsScreen({ navigation }) {
             {demoViews.toLocaleString()}
           </Text>
           <Text style={styles.statLabel}>
-            Sample video views
+            Video views
           </Text>
         </View>
 

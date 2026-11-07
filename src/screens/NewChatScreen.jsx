@@ -1,210 +1,157 @@
-
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  FlatList,
-  StyleSheet
-} from 'react-native';
-
-const sampleContacts = [
-  {
-    id: '1',
-    name: 'Thabo',
-    phone: '+27820000001',
-    username: '@thabo',
-    avatar: '👨🏽'
-  },
-  {
-    id: '2',
-    name: 'Lerato',
-    phone: '+27820000002',
-    username: '@lerato',
-    avatar: '👩🏽'
-  },
-  {
-    id: '3',
-    name: 'Sipho',
-    phone: '+27820000003',
-    username: '@sipho',
-    avatar: '👨🏿'
-  },
-  {
-    id: '4',
-    name: 'Nomsa',
-    phone: '+27820000004',
-    username: '@nomsa',
-    avatar: '👩🏿'
-  }
-];
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
+import { useAuth } from '../AuthContext';
+import { supabase } from '../lib_supabase';
+import { createDirectConversation } from '../services/social';
 
 export default function NewChatScreen({ navigation }) {
-  const [search, setSearch] = useState('');
+  const { user } = useAuth();
+  const [query, setQuery] = useState('');
+  const [results, setResults] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [openingId, setOpeningId] = useState('');
+  const [notice, setNotice] = useState('');
+  const [hasSearched, setHasSearched] = useState(false);
 
-  const filteredContacts = sampleContacts.filter(contact => {
-    const query = search.toLowerCase();
+  // Older accounts may pre-date the profile trigger. Ensure the signed-in
+  // account has a public profile row without changing an existing profile.
+  const ensureMyProfile = useCallback(async () => {
+    if (!user?.id) throw new Error('Please sign in again to discover people.');
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', user.id)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) {
+      const metadata = user.user_metadata || {};
+      const { error: insertError } = await supabase.from('profiles').insert({
+        id: user.id,
+        full_name: metadata.full_name || metadata.name || '',
+        username: metadata.username || null
+      });
+      if (insertError && insertError.code !== '23505') throw insertError;
+    }
+  }, [user]);
 
-    return (
-      contact.name.toLowerCase().includes(query) ||
-      contact.phone.includes(query) ||
-      contact.username.toLowerCase().includes(query)
-    );
-  });
+  const loadPeople = useCallback(async () => {
+    if (!user?.id) return;
+    setBusy(true);
+    setNotice('');
+    try {
+      await ensureMyProfile();
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, username, full_name, avatar_url')
+        .neq('id', user.id)
+        .order('full_name', { ascending: true })
+        .limit(100);
+      if (error) throw error;
+      setResults(data || []);
+      setHasSearched(false);
+      if (!(data || []).length) {
+        setNotice('No other member profiles are visible yet. Ask the other member to sign in once, save their profile, then refresh.');
+      }
+    } catch (error) {
+      setNotice(`Could not load member accounts: ${error.message || 'Please try again.'}`);
+      setResults([]);
+    } finally {
+      setBusy(false);
+    }
+  }, [user?.id, ensureMyProfile]);
 
-  const openConversation = contact => {
-    navigation.navigate('ChatConversation', {
-      chatId: contact.id,
-      chatName: contact.name,
-      phoneNumber: contact.phone
-    });
+  useEffect(() => { loadPeople(); }, [loadPeople]);
+
+  const search = async () => {
+    const q = query.trim().replace(/^@/, '');
+    if (q.length < 2) {
+      setNotice('Enter at least 2 characters of a display name or username.');
+      return;
+    }
+    if (!user?.id) return;
+    setBusy(true);
+    setNotice('');
+    setHasSearched(true);
+    try {
+      await ensureMyProfile();
+      const [byUsername, byName] = await Promise.all([
+        supabase.from('profiles').select('id, username, full_name, avatar_url').ilike('username', `%${q}%`).neq('id', user.id).limit(50),
+        supabase.from('profiles').select('id, username, full_name, avatar_url').ilike('full_name', `%${q}%`).neq('id', user.id).limit(50)
+      ]);
+      if (byUsername.error) throw byUsername.error;
+      if (byName.error) throw byName.error;
+      const combined = [...(byUsername.data || []), ...(byName.data || [])];
+      const unique = Array.from(new Map(combined.map(person => [person.id, person])).values());
+      setResults(unique);
+      if (!unique.length) setNotice('No matching member found. Check the spelling or ask them to save a display name in Profile.');
+    } catch (error) {
+      setResults([]);
+      setNotice(`Account search failed: ${error.message || 'Please try again.'}`);
+    } finally {
+      setBusy(false);
+    }
   };
 
-  const renderContact = ({ item }) => (
-    <TouchableOpacity
-      style={styles.contactItem}
-      onPress={() => openConversation(item)}
-    >
-      <View style={styles.avatar}>
-        <Text style={styles.avatarText}>{item.avatar}</Text>
-      </View>
+  const open = async person => {
+    try {
+      setOpeningId(person.id);
+      setNotice('');
+      const id = await createDirectConversation(user.id, person.id);
+      navigation.replace('ChatConversation', {
+        chatId: id,
+        chatName: person.full_name || (person.username ? `@${person.username}` : 'KONNEKT member')
+      });
+    } catch (error) {
+      setNotice(`Could not start this conversation: ${error.message || 'Please try again.'}`);
+    } finally {
+      setOpeningId('');
+    }
+  };
 
-      <View style={styles.contactDetails}>
-        <Text style={styles.contactName}>{item.name}</Text>
-        <Text style={styles.username}>{item.username}</Text>
-        <Text style={styles.phone}>{item.phone}</Text>
-      </View>
-
-      <Text style={styles.arrow}>›</Text>
-    </TouchableOpacity>
-  );
+  const clearSearch = () => { setQuery(''); loadPeople(); };
 
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.back}>‹ Back</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.title}>New Chat</Text>
+    <View style={s.container}>
+      <TouchableOpacity onPress={() => navigation.goBack()} accessibilityRole="button"><Text style={s.back}>‹ Back to Chats</Text></TouchableOpacity>
+      <Text style={s.title}>Discover accounts</Text>
+      <Text style={s.hint}>Find registered KONNEKT members by display name or username. Email addresses are never shown.</Text>
+      <View style={s.searchRow}>
+        <TextInput style={s.input} value={query} onChangeText={setQuery} onSubmitEditing={search}
+          placeholder="Search name or @username" placeholderTextColor="#8293A8" autoCapitalize="none" returnKeyType="search" />
+        <TouchableOpacity style={s.button} onPress={search} disabled={busy}><Text style={s.buttonText}>Search</Text></TouchableOpacity>
       </View>
-
-      <TextInput
-        style={styles.search}
-        placeholder="Search name or phone number..."
-        placeholderTextColor="#8A99AD"
-        value={search}
-        onChangeText={setSearch}
-        autoCapitalize="none"
-      />
-
-      <Text style={styles.sectionTitle}>KONNEKT Contacts</Text>
-
-      <FlatList
-        data={filteredContacts}
-        keyExtractor={item => item.id}
-        renderItem={renderContact}
-        ListEmptyComponent={
-          <Text style={styles.emptyText}>
-            No contacts found.
-          </Text>
-        }
-      />
-
-      <Text style={styles.notice}>
-        Contact discovery and private phone-number matching
-        will be connected securely through the backend.
-      </Text>
+      <View style={s.listHeading}>
+        <Text style={s.listTitle}>{hasSearched ? 'Search results' : 'KONNEKT members'}</Text>
+        <TouchableOpacity onPress={clearSearch} disabled={busy}><Text style={s.refresh}>Refresh</Text></TouchableOpacity>
+      </View>
+      {busy ? <ActivityIndicator color="#168BFF" style={{ marginTop: 28 }} /> : (
+        <FlatList data={results} keyExtractor={person => person.id} onRefresh={loadPeople} refreshing={busy}
+          renderItem={({ item }) => (
+            <TouchableOpacity style={s.person} onPress={() => open(item)} disabled={!!openingId}>
+              <View style={s.avatar}><Text style={s.avatarText}>{(item.full_name || item.username || 'K').trim().charAt(0).toUpperCase()}</Text></View>
+              <View style={{ flex: 1 }}>
+                <Text style={s.name}>{item.full_name || 'KONNEKT member'}</Text>
+                <Text style={s.username}>{item.username ? `@${item.username}` : 'Username not set'}</Text>
+              </View>
+              {openingId === item.id ? <ActivityIndicator color="#168BFF" /> : <Text style={s.arrow}>Message ›</Text>}
+            </TouchableOpacity>
+          )}
+          ListEmptyComponent={<Text style={s.empty}>No other accounts to show yet. Pull down to refresh after another member has registered and saved a profile.</Text>}
+        />
+      )}
+      {!!notice && <Text style={s.notice}>{notice}</Text>}
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#07111F',
-    padding: 20
-  },
-  header: {
-    marginTop: 25,
-    marginBottom: 22
-  },
-  back: {
-    color: '#00E5A8',
-    fontSize: 16,
-    marginBottom: 15
-  },
-  title: {
-    color: '#FFFFFF',
-    fontSize: 27,
-    fontWeight: 'bold'
-  },
-  search: {
-    backgroundColor: '#14243A',
-    borderRadius: 12,
-    padding: 16,
-    color: '#FFFFFF',
-    fontSize: 14,
-    marginBottom: 22
-  },
-  sectionTitle: {
-    color: '#00E5A8',
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 12
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingVertical: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: '#263A53'
-  },
-  avatar: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
-    backgroundColor: '#14243A',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 13
-  },
-  avatarText: {
-    fontSize: 25
-  },
-  contactDetails: {
-    flex: 1
-  },
-  contactName: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold'
-  },
-  username: {
-    color: '#00E5A8',
-    fontSize: 12,
-    marginTop: 3
-  },
-  phone: {
-    color: '#8A99AD',
-    fontSize: 12,
-    marginTop: 3
-  },
-  arrow: {
-    color: '#00E5A8',
-    fontSize: 27
-  },
-  emptyText: {
-    color: '#8A99AD',
-    textAlign: 'center',
-    marginTop: 35
-  },
-  notice: {
-    color: '#8A99AD',
-    fontSize: 11,
-    textAlign: 'center',
-    paddingVertical: 15,
-    lineHeight: 17
-  }
+const s = StyleSheet.create({
+  container:{flex:1,backgroundColor:'#07111F',padding:20}, back:{color:'#168BFF',fontSize:16,marginTop:20},
+  title:{color:'#FFF',fontSize:27,fontWeight:'bold',marginTop:22}, hint:{color:'#9AABC0',marginTop:8,marginBottom:20,lineHeight:20},
+  searchRow:{flexDirection:'row',gap:8}, input:{flex:1,backgroundColor:'#14243A',borderRadius:10,padding:13,color:'#FFF',borderWidth:1,borderColor:'#263A53'},
+  button:{backgroundColor:'#168BFF',borderRadius:10,paddingHorizontal:16,justifyContent:'center'},buttonText:{color:'#FFF',fontWeight:'bold'},
+  listHeading:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:25,marginBottom:8},listTitle:{color:'#EAF4FF',fontWeight:'bold',fontSize:16},
+  refresh:{color:'#67B8FF',fontSize:13},person:{flexDirection:'row',alignItems:'center',paddingVertical:14,borderBottomWidth:1,borderColor:'#263A53',gap:12},
+  avatar:{width:44,height:44,borderRadius:22,backgroundColor:'#203753',alignItems:'center',justifyContent:'center'},avatarText:{color:'#FFF',fontSize:19,fontWeight:'bold'},
+  name:{color:'#FFF',fontWeight:'bold'},username:{color:'#8EA3BB',marginTop:4,fontSize:12},arrow:{color:'#67B8FF',fontWeight:'bold',fontSize:12},
+  empty:{color:'#9AABC0',textAlign:'center',marginTop:35,lineHeight:22},notice:{color:'#FFC0C8',marginTop:16,lineHeight:20}
 });

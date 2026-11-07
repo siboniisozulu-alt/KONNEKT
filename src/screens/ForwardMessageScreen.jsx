@@ -10,14 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-const sampleContacts = [
-  { id: '1', name: 'Thabo Mokoena', online: true },
-  { id: '2', name: 'Lerato Nkosi', online: false },
-  { id: '3', name: 'Sipho Dlamini', online: true },
-  { id: '4', name: 'Nomsa Zulu', online: false },
-  { id: '5', name: 'Sibusiso Khumalo', online: false },
-  { id: '6', name: 'Ayanda Ndlovu', online: true },
-];
+const sampleContacts = [];
 
 export default function ForwardMessageScreen({ navigation, route }) {
   const message = route?.params?.message || {
@@ -27,7 +20,7 @@ export default function ForwardMessageScreen({ navigation, route }) {
   const [search, setSearch] = useState('');
   const [selectedContacts, setSelectedContacts] = useState([]);
 
-  const filteredContacts = sampleContacts.filter((contact) =>
+  const filteredContacts = (route?.params?.contacts || []).filter((contact) =>
     contact.name.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -48,7 +41,7 @@ export default function ForwardMessageScreen({ navigation, route }) {
       return;
     }
 
-    const selectedNames = sampleContacts
+    const selectedNames = (route?.params?.contacts || [])
       .filter((contact) => selectedContacts.includes(contact.id))
       .map((contact) => contact.name);
 

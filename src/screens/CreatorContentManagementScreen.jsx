@@ -9,53 +9,9 @@ import {
   Alert,
 } from 'react-native';
 
-const initialVideos = [
-  {
-    id: '1',
-    title: 'My first KONNEKT video',
-    category: 'Lifestyle',
-    views: '1.2K',
-    likes: '245',
-    comments: '38',
-    visibility: 'Public',
-    emoji: '🎬',
-  },
-  {
-    id: '2',
-    title: 'A day in my community',
-    category: 'Community',
-    views: '850',
-    likes: '160',
-    comments: '24',
-    visibility: 'Public',
-    emoji: '🌍',
-  },
-  {
-    id: '3',
-    title: 'Behind the scenes',
-    category: 'Entertainment',
-    views: '430',
-    likes: '92',
-    comments: '15',
-    visibility: 'Private',
-    emoji: '📹',
-  },
-];
+const initialVideos = [];
 
-const initialDrafts = [
-  {
-    id: 'd1',
-    title: 'My next video idea',
-    category: 'Lifestyle',
-    emoji: '📝',
-  },
-  {
-    id: 'd2',
-    title: 'Weekend content',
-    category: 'Entertainment',
-    emoji: '🎥',
-  },
-];
+const initialDrafts = [];
 
 export default function CreatorContentManagementScreen({ navigation }) {
   const [activeTab, setActiveTab] = useState('Published');
@@ -65,7 +21,7 @@ export default function CreatorContentManagementScreen({ navigation }) {
   const deleteVideo = (video) => {
     Alert.alert(
       'Delete video',
-      `Remove "${video.title}" from this local demo list?`,
+      `Remove "${video.title}" from your content list?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -84,7 +40,7 @@ export default function CreatorContentManagementScreen({ navigation }) {
   const deleteDraft = (draft) => {
     Alert.alert(
       'Delete draft',
-      `Delete "${draft.title}" from this local demo?`,
+      `Delete "${draft.title}" from your drafts?`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -256,7 +212,7 @@ export default function CreatorContentManagementScreen({ navigation }) {
 
           {videos.length === 0 ? (
             <Text style={styles.emptyText}>
-              You have no videos in this demo list.
+              You have not published any videos yet.
             </Text>
           ) : (
             videos.map(renderVideo)
@@ -298,7 +254,7 @@ export default function CreatorContentManagementScreen({ navigation }) {
       <View style={styles.notice}>
         <Text style={styles.noticeTitle}>Prototype information</Text>
         <Text style={styles.noticeText}>
-          Videos, statistics and drafts are sample data. Changes
+          Your published content and drafts will appear here when connected. Changes
           happen only inside this screen and are not saved to a
           permanent account or server.
         </Text>

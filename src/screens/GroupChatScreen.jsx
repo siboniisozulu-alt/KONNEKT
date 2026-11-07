@@ -11,39 +11,17 @@ import {
   Platform,
 } from 'react-native';
 
-const initialMessages = [
-  {
-    id: '1',
-    sender: 'Thabo',
-    text: 'Welcome everyone to our group!',
-    time: '09:30',
-    mine: false,
-  },
-  {
-    id: '2',
-    sender: 'Lerato',
-    text: 'Thank you! Happy to be here.',
-    time: '09:32',
-    mine: false,
-  },
-  {
-    id: '3',
-    sender: 'You',
-    text: 'Great to connect with everyone.',
-    time: '09:35',
-    mine: true,
-  },
-];
+const initialMessages = [];
 
 export default function GroupChatScreen({ navigation, route }) {
   const group = route?.params?.group || {
-    id: 'demo',
-    name: 'KONNEKT Friends',
+    id: '',
+    name: route?.params?.groupName || 'Group',
     members: [],
   };
 
   const [messages, setMessages] = useState(
-    route?.params?.messages || initialMessages
+    route?.params?.messages || []
   );
 
   const [messageText, setMessageText] = useState('');

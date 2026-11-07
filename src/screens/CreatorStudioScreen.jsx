@@ -278,7 +278,7 @@ export default function CreatorStudioScreen({ navigation }) {
       )}
 
       <Text style={styles.footer}>
-        Statistics and creator activity are sample data until
+        Statistics and creator activity will appear here when
         the KONNEKT backend is connected.
       </Text>
     </ScrollView>

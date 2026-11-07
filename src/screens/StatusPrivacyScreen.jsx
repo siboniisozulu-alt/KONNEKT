@@ -32,13 +32,7 @@ export default function StatusPrivacyScreen({ navigation, route }) {
     },
   ];
 
-  const sampleContacts = [
-    { id: '1', name: 'Thabo Mokoena' },
-    { id: '2', name: 'Lerato Dlamini' },
-    { id: '3', name: 'Sipho Nkosi' },
-    { id: '4', name: 'Amahle Zulu' },
-    { id: '5', name: 'Nomsa Khumalo' },
-  ];
+  const sampleContacts = route?.params?.contacts || [];
 
   const toggleContact = (id) => {
     setExcludedContacts((previous) =>

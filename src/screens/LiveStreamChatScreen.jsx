@@ -10,36 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-const initialMessages = [
-  {
-    id: '1',
-    username: 'Thando',
-    message: 'This live is amazing! 🔥',
-    likes: 4,
-    moderator: false,
-  },
-  {
-    id: '2',
-    username: 'Lerato',
-    message: 'Greetings from Durban ❤️',
-    likes: 7,
-    moderator: false,
-  },
-  {
-    id: '3',
-    username: 'KONNEKT Admin',
-    message: 'Welcome everyone. Please respect each other.',
-    likes: 12,
-    moderator: true,
-  },
-  {
-    id: '4',
-    username: 'Sipho',
-    message: 'Keep creating great content!',
-    likes: 2,
-    moderator: false,
-  },
-];
+const initialMessages = [];
 
 export default function LiveStreamChatScreen({ navigation, route }) {
   const { isModerator = false } = route?.params || {};

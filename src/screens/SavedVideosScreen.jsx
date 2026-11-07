@@ -10,44 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-const initialVideos = [
-  {
-    id: '1',
-    title: 'Beautiful moments in South Africa 🇿🇦',
-    creator: 'Kasi Creator',
-    category: 'Lifestyle',
-    duration: '00:35',
-    views: '12.5K',
-    thumbnail: '🌍',
-  },
-  {
-    id: '2',
-    title: 'Funny township moments 😂',
-    creator: 'Comedy Zone',
-    category: 'Comedy',
-    duration: '00:48',
-    views: '45K',
-    thumbnail: '😂',
-  },
-  {
-    id: '3',
-    title: 'Learn something new today',
-    creator: 'Smart Academy',
-    category: 'Education',
-    duration: '01:12',
-    views: '8.2K',
-    thumbnail: '📚',
-  },
-  {
-    id: '4',
-    title: 'Amazing football skills',
-    creator: 'Football Daily',
-    category: 'Sports',
-    duration: '00:29',
-    views: '30K',
-    thumbnail: '⚽',
-  },
-];
+const initialVideos = [];
 
 export default function SavedVideosScreen({ navigation }) {
   const [videos, setVideos] = useState(initialVideos);

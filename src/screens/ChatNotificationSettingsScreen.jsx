@@ -40,7 +40,7 @@ export default function ChatNotificationSettingsScreen({
   const showInfo = () => {
     Alert.alert(
       'KONNEKT notifications',
-      'Your notification preferences are currently stored locally in this demo. They will be connected to your account settings later.'
+      'These preferences are not connected to account storage yet. Changes on this screen will not be saved.'
     );
   };
 

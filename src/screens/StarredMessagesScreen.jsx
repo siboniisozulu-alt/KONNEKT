@@ -10,33 +10,11 @@ import {
   Alert,
 } from 'react-native';
 
-const sampleStarredMessages = [
-  {
-    id: '1',
-    contact: 'Thabo Mokoena',
-    message: 'The meeting is scheduled for Friday at 10 AM.',
-    date: 'Today, 09:15',
-    type: 'Text',
-  },
-  {
-    id: '2',
-    contact: 'Lerato Nkosi',
-    message: 'Please remember to send me the documents.',
-    date: 'Yesterday, 16:30',
-    type: 'Text',
-  },
-  {
-    id: '3',
-    contact: 'Sipho Dlamini',
-    message: 'Our group event starts at 6 PM.',
-    date: 'Monday, 12:10',
-    type: 'Text',
-  },
-];
+const sampleStarredMessages = [];
 
 export default function StarredMessagesScreen({ navigation }) {
   const [search, setSearch] = useState('');
-  const [messages, setMessages] = useState(sampleStarredMessages);
+  const [messages, setMessages] = useState([]);
 
   const filteredMessages = messages.filter((item) =>
     item.message.toLowerCase().includes(search.toLowerCase()) ||

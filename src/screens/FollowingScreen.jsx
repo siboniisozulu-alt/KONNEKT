@@ -10,46 +10,10 @@ import {
   Alert,
 } from 'react-native';
 
-const initialFollowing = [
-  {
-    id: '1',
-    name: 'Thando Music',
-    username: '@thando_music',
-    avatar: '🎵',
-    verified: true,
-  },
-  {
-    id: '2',
-    name: 'Kasi Comedy',
-    username: '@kasi_comedy',
-    avatar: '😂',
-    verified: true,
-  },
-  {
-    id: '3',
-    name: 'Sipho Creates',
-    username: '@sipho_creates',
-    avatar: '🎬',
-    verified: false,
-  },
-  {
-    id: '4',
-    name: 'Lerato Fashion',
-    username: '@lerato_style',
-    avatar: '👗',
-    verified: false,
-  },
-  {
-    id: '5',
-    name: 'Football Daily',
-    username: '@football_daily',
-    avatar: '⚽',
-    verified: true,
-  },
-];
+const initialFollowing = [];
 
 export default function FollowingScreen({ navigation }) {
-  const [following, setFollowing] = useState(initialFollowing);
+  const [following, setFollowing] = useState([]);
   const [search, setSearch] = useState('');
 
   const filteredFollowing = following.filter((person) =>

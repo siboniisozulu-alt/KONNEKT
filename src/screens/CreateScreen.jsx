@@ -23,14 +23,14 @@ export default function CreateScreen({ navigation }) {
 
   const handleCreate = () => {
     if (selectedType === 'Live') {
-      navigation.navigate('Watch');
+      navigation.navigate('LiveStreamSetup');
       return;
     }
-
-    Alert.alert(
-      'KONNEKT Creator',
-      'Media recording and uploading will be connected in a later stage.'
-    );
+    if (selectedType === 'Status') {
+      navigation.navigate('CreateStatus');
+      return;
+    }
+    navigation.navigate('Watch');
   };
 
   return (

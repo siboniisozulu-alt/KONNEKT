@@ -10,48 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-const sampleDocuments = [
-  {
-    id: '1',
-    name: 'Business Proposal.pdf',
-    type: 'PDF',
-    size: '2.4 MB',
-    icon: '📕',
-    category: 'PDF',
-  },
-  {
-    id: '2',
-    name: 'Project Notes.docx',
-    type: 'WORD',
-    size: '850 KB',
-    icon: '📘',
-    category: 'Word',
-  },
-  {
-    id: '3',
-    name: 'Monthly Budget.xlsx',
-    type: 'EXCEL',
-    size: '1.2 MB',
-    icon: '📗',
-    category: 'Excel',
-  },
-  {
-    id: '4',
-    name: 'Presentation.pptx',
-    type: 'POWERPOINT',
-    size: '3.1 MB',
-    icon: '📙',
-    category: 'Other',
-  },
-  {
-    id: '5',
-    name: 'Meeting Details.pdf',
-    type: 'PDF',
-    size: '500 KB',
-    icon: '📕',
-    category: 'PDF',
-  },
-];
+const sampleDocuments = [];
 
 export default function DocumentPickerScreen({
   navigation,

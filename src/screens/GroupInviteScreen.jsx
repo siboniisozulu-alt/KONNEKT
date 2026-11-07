@@ -13,14 +13,14 @@ import {
 
 export default function GroupInviteScreen({ navigation, route }) {
   const group = route?.params?.group || {
-    name: 'KONNEKT Friends',
+    name: route?.params?.groupName || 'Group',
   };
 
-  const [inviteCode] = useState('KONNEKT2026');
+  const [inviteCode] = useState('');
 
   // Demo link only. A real invitation link must be generated
   // and validated by the KONNEKT backend.
-  const inviteLink = `https://siboniisozulu-alt.github.io/KONNEKT/join?code=${inviteCode}`;
+  const inviteLink = '';
 
   const copyCode = async () => {
     try {

@@ -12,38 +12,7 @@ import {
   Alert,
 } from 'react-native';
 
-const initialComments = [
-  {
-    id: '1',
-    name: 'Thando',
-    username: '@thando_music',
-    avatar: '🎵',
-    message: 'This video is amazing! 🔥',
-    likes: 24,
-    liked: false,
-    time: '2h ago',
-  },
-  {
-    id: '2',
-    name: 'Sipho',
-    username: '@sipho_creates',
-    avatar: '🎬',
-    message: 'KONNEKT is going to be something special!',
-    likes: 18,
-    liked: true,
-    time: '3h ago',
-  },
-  {
-    id: '3',
-    name: 'Lerato',
-    username: '@lerato_za',
-    avatar: '🌸',
-    message: 'Love this content ❤️',
-    likes: 12,
-    liked: false,
-    time: '5h ago',
-  },
-];
+const initialComments = [];
 
 export default function CommentsScreen({ navigation, route }) {
   const videoTitle = route?.params?.videoTitle || 'KONNEKT video';

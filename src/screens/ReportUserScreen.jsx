@@ -41,7 +41,7 @@ export default function ReportUserScreen({ navigation, route }) {
 
     Alert.alert(
       'Report ready',
-      `Account: ${reportedUser.name}\nReason: ${selectedReason}\n\nThis is a demo. Your report has not been sent to KONNEKT.`,
+      `Account: ${reportedUser.name}\nReason: ${selectedReason}\n\nYour report has not been sent. Reporting is not connected yet.`,
       [
         {
           text: 'OK',

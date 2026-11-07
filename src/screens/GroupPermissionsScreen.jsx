@@ -12,7 +12,7 @@ import {
 
 export default function GroupPermissionsScreen({ navigation, route }) {
   const group = route?.params?.group || {
-    name: 'KONNEKT Friends',
+    name: route?.params?.groupName || 'Group',
   };
 
   const [permissions, setPermissions] = useState({
@@ -50,8 +50,8 @@ export default function GroupPermissionsScreen({ navigation, route }) {
     }
 
     Alert.alert(
-      'Demo settings saved',
-      'These permission changes are currently stored only in this screen.'
+      'Settings not saved',
+      'Group permission saving is not connected yet. No changes have been saved.'
     );
   };
 
