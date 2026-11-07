@@ -5,7 +5,7 @@ import { supabase } from '../lib_supabase';
 import { chooseMedia, uploadMedia } from '../services/media';
 
 const MAX_VIDEO_BYTES = 45 * 1024 * 1024;
-const REEL_PAGE_HEIGHT = Math.max(500, Dimensions.get('window').height - 250);
+const REEL_PAGE_HEIGHT = Math.max(420, Dimensions.get('window').height - 245);
 
 export default function WatchScreen({ navigation }) {
   const { user } = useAuth();
@@ -20,6 +20,8 @@ export default function WatchScreen({ navigation }) {
   const [uploading, setUploading] = useState(false);
   const [caption, setCaption] = useState('');
   const [notice, setNotice] = useState('');
+  const [feedHeight, setFeedHeight] = useState(0);
+  const pageHeight = feedHeight || REEL_PAGE_HEIGHT;
 
   const load = useCallback(async () => {
     if (!user?.id) { setBusy(false); return; }
@@ -72,6 +74,7 @@ export default function WatchScreen({ navigation }) {
     const channel = supabase.channel(`konnekt-reels-${user?.id || 'guest'}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'posts' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'post_likes' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'follows' }, load)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'post_comments' }, load)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
@@ -162,7 +165,7 @@ export default function WatchScreen({ navigation }) {
     const postComments = comments[item.id] || [];
     const creator = item.profile?.username ? `@${item.profile.username}` : 'KONNEKT member';
     return (
-      <View style={s.reelCard}>
+      <View style={[s.reelCard, { height: pageHeight }]}>
         <View style={s.creatorRow}>
           <TouchableOpacity style={s.creatorIdentity} onPress={() => openCreator(item)} accessibilityRole="button" accessibilityLabel="Open creator profile">
             <View style={s.creatorAvatar}><Text style={s.creatorAvatarText}>{(item.profile?.full_name || item.profile?.username || 'K').slice(0, 1).toUpperCase()}</Text></View>
@@ -171,9 +174,11 @@ export default function WatchScreen({ navigation }) {
               <Text style={s.creatorName}>{item.profile?.full_name || 'KONNEKT creator'}</Text>
             </View>
           </TouchableOpacity>
-          {item.user_id !== user?.id && <TouchableOpacity onPress={() => toggleFollow(item.user_id)} disabled={followBusy === item.user_id} style={[s.followButton, following.has(item.user_id) && s.followingButton]}>
-            <Text style={s.followText}>{followBusy === item.user_id ? '…' : following.has(item.user_id) ? 'Following' : '＋ Follow'}</Text>
-          </TouchableOpacity>}
+          {String(item.user_id) !== String(user?.id) ? (
+            <TouchableOpacity accessibilityRole="button" accessibilityLabel={following.has(item.user_id) ? 'Unfollow creator' : 'Follow creator'} onPress={() => toggleFollow(item.user_id)} disabled={followBusy === item.user_id || !!followBusy} style={[s.followButton, following.has(item.user_id) && s.followingButton]}>
+              <Text style={s.followText}>{followBusy === item.user_id ? 'Saving…' : following.has(item.user_id) ? '✓ Following' : '+ Follow'}</Text>
+            </TouchableOpacity>
+          ) : <View style={s.ownBadge}><Text style={s.ownBadgeText}>Your Reel</Text></View>}
         </View>
         <View style={s.mediaFrame}>
           {item.media_type === 'image' ? (
@@ -216,23 +221,26 @@ export default function WatchScreen({ navigation }) {
       </View>
       <TextInput style={s.input} value={caption} onChangeText={setCaption} placeholder="Add a caption before uploading (optional)" placeholderTextColor="#8293A8" maxLength={500} />
       {!!notice && <Text style={s.notice}>{notice}</Text>}
-      {busy ? <ActivityIndicator color="#168BFF" style={{ marginTop: 35 }} /> : (
-        <FlatList
-          data={posts}
-          keyExtractor={item => item.id}
-          renderItem={renderReel}
-          pagingEnabled
-          snapToInterval={REEL_PAGE_HEIGHT}
-          snapToAlignment="start"
-          decelerationRate="fast"
-          getItemLayout={(_, index) => ({ length: REEL_PAGE_HEIGHT, offset: REEL_PAGE_HEIGHT * index, index })}
-          onRefresh={load}
-          refreshing={busy}
-          contentContainerStyle={posts.length ? s.feedContent : s.emptyContent}
-          ListEmptyComponent={empty}
-          showsVerticalScrollIndicator={false}
-        />
-      )}
+      <View style={s.feedViewport} onLayout={event => { const height = event.nativeEvent.layout.height; if (height > 0 && Math.abs(height - feedHeight) > 1) setFeedHeight(height); }}>
+        {busy ? <ActivityIndicator color="#168BFF" style={{ marginTop: 35 }} /> : (
+          <FlatList
+            style={{ flex: 1 }}
+            data={posts}
+            keyExtractor={item => item.id}
+            renderItem={renderReel}
+            pagingEnabled
+            snapToInterval={pageHeight}
+            snapToAlignment="start"
+            decelerationRate="fast"
+            getItemLayout={(_, index) => ({ length: pageHeight, offset: pageHeight * index, index })}
+            onRefresh={load}
+            refreshing={busy}
+            contentContainerStyle={posts.length ? s.feedContent : s.emptyContent}
+            ListEmptyComponent={empty}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
       <Text style={s.footer}>Keep videos short, respectful and safe to share.</Text>
     </View>
   );
@@ -248,18 +256,21 @@ const s = StyleSheet.create({
   uploadText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
   input: { backgroundColor: '#14243A', borderWidth: 1, borderColor: '#263A53', borderRadius: 11, padding: 12, color: '#FFF', marginBottom: 9 },
   notice: { color: '#9FD3FF', marginBottom: 8, fontSize: 12 },
-  feedContent: { paddingBottom: 12 },
+  feedViewport: { flex: 1, minHeight: 180 },
+  feedContent: { paddingBottom: 0 },
   emptyContent: { flexGrow: 1, justifyContent: 'center' },
   emptyWrap: { alignItems: 'center', padding: 28 },
   emptyIcon: { fontSize: 44, marginBottom: 12 },
   emptyTitle: { color: '#FFF', fontWeight: 'bold', fontSize: 18, marginBottom: 8 },
   empty: { color: '#9AABC0', textAlign: 'center', lineHeight: 22, maxWidth: 340 },
   reelCard: { backgroundColor: '#07111F', height: REEL_PAGE_HEIGHT, padding: 12, marginBottom: 0, borderBottomWidth: 1, borderBottomColor: '#263A53', justifyContent: 'flex-start' },
-  creatorRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 10 },
+  creatorRow: { flexDirection: 'row', alignItems: 'center', gap: 9, marginBottom: 12, minHeight: 54, width: '100%' },
   creatorIdentity: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 9, minWidth: 0 },
-  followButton: { backgroundColor: '#168BFF', paddingHorizontal: 13, paddingVertical: 8, borderRadius: 18 },
+  followButton: { backgroundColor: '#168BFF', paddingHorizontal: 16, paddingVertical: 10, borderRadius: 20, minWidth: 88, alignItems: 'center', justifyContent: 'center', flexShrink: 0, elevation: 3 },
   followingButton: { backgroundColor: '#263A53', borderWidth: 1, borderColor: '#4B6683' },
-  followText: { color: '#FFF', fontWeight: 'bold', fontSize: 11 },
+  followText: { color: '#FFF', fontWeight: 'bold', fontSize: 12 },
+  ownBadge: { backgroundColor: '#263A53', paddingHorizontal: 12, paddingVertical: 9, borderRadius: 18 },
+  ownBadgeText: { color: '#B9C9DB', fontSize: 11, fontWeight: 'bold' },
   creatorAvatar: { width: 38, height: 38, borderRadius: 19, backgroundColor: '#193B5C', alignItems: 'center', justifyContent: 'center' },
   creatorAvatarText: { color: '#FFF', fontSize: 16, fontWeight: 'bold' },
   creator: { color: '#A9D8FF', fontWeight: 'bold', fontSize: 13 },

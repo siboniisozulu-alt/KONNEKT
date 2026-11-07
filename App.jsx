@@ -28,7 +28,7 @@ const screenRegistry = Object.fromEntries(
 
 const routeAliases = {
   Reels: 'Watch',
-  Discover: 'Hashtag',
+  Discover: 'Discover',
   ChatMedia: 'ChatAttachments',
   CameraScreen: 'Camera',
   ShareContactScreen: 'ShareContact',

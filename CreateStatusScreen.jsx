@@ -1,7 +1,43 @@
-import React,{useState} from 'react';
-import {View,Text,TextInput,TouchableOpacity,StyleSheet,ActivityIndicator} from 'react-native';
-import {useAuth} from '../AuthContext';
-import {supabase} from '../lib_supabase';
-import {chooseMedia,uploadMedia} from '../services/media';
-export default function CreateStatusScreen({navigation}){const {user}=useAuth();const [text,setText]=useState('');const [file,setFile]=useState(null);const [busy,setBusy]=useState(false);const [notice,setNotice]=useState('');const pick=async()=>{try{const f=await chooseMedia();if(f)setFile(f);}catch(e){setNotice(e.message);}};const publish=async()=>{if(!text.trim()&&!file){setNotice('Write an update or attach a photo/video.');return;}setBusy(true);setNotice('');try{let media=null;if(file)media=await uploadMedia(file,'konnekt-public-media',`statuses/${user.id}`);const {error}=await supabase.from('statuses').insert({user_id:user.id,text_content:text.trim()||null,media_url:media?.url||null,media_type:media?.type||'text'});if(error)throw error;navigation.goBack();}catch(e){setNotice(e.message);}finally{setBusy(false);}};return <View style={s.container}><TouchableOpacity onPress={()=>navigation.goBack()}><Text style={s.back}>‹ Back</Text></TouchableOpacity><Text style={s.title}>Create a status</Text><TextInput style={s.input} value={text} onChangeText={setText} multiline maxLength={700} placeholder="What's happening?" placeholderTextColor="#8293A8"/><TouchableOpacity style={s.secondary} onPress={pick}><Text style={s.secondaryText}>＋ Add photo or video</Text></TouchableOpacity>{!!file&&<Text style={s.file}>Selected: {file.name}</Text>}<TouchableOpacity style={s.publish} onPress={publish} disabled={busy}>{busy?<ActivityIndicator color="#FFF"/>:<Text style={s.publishText}>PUBLISH STATUS</Text>}</TouchableOpacity><Text style={s.hint}>Your status is visible to signed-in KONNEKT members for 24 hours.</Text>{!!notice&&<Text style={s.error}>{notice}</Text>}</View>}
-const s=StyleSheet.create({container:{flex:1,backgroundColor:'#07111F',padding:20},back:{color:'#168BFF',fontSize:16,marginTop:20},title:{color:'#FFF',fontSize:27,fontWeight:'bold',marginTop:24,marginBottom:18},input:{backgroundColor:'#14243A',color:'#FFF',borderRadius:14,padding:16,minHeight:160,textAlignVertical:'top'},secondary:{borderWidth:1,borderColor:'#168BFF',borderRadius:12,padding:15,alignItems:'center',marginTop:15},secondaryText:{color:'#8CCBFF',fontWeight:'bold'},file:{color:'#B8C8D9',marginTop:10},publish:{backgroundColor:'#168BFF',borderRadius:12,padding:16,alignItems:'center',marginTop:22},publishText:{color:'#FFF',fontWeight:'bold'},hint:{color:'#8293A8',fontSize:11,marginTop:15,textAlign:'center'},error:{color:'#FF8795',marginTop:12}});
+import React, { useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useAuth } from '../AuthContext';
+import { supabase } from '../lib_supabase';
+import { chooseMedia, uploadMedia } from '../services/media';
+
+export default function CreateStatusScreen({ navigation }) {
+  const { user } = useAuth();
+  const [text, setText] = useState('');
+  const [file, setFile] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState('');
+  const pick = async () => {
+    try { const selected = await chooseMedia('image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime'); if (selected) setFile(selected); }
+    catch (error) { setNotice(error.message || 'Could not select media.'); }
+  };
+  const publish = async () => {
+    if (!user?.id) { setNotice('Please sign in again to publish a status.'); return; }
+    if (!text.trim() && !file) { setNotice('Write an update or attach a photo or video.'); return; }
+    if (file && !file.type?.startsWith('image/') && !file.type?.startsWith('video/')) { setNotice('Choose a photo or video.'); return; }
+    if (file && file.size > (file.type.startsWith('video/') ? 45 : 15) * 1024 * 1024) { setNotice(file.type.startsWith('video/') ? 'Choose a video smaller than 45 MB.' : 'Choose an image smaller than 15 MB.'); return; }
+    setBusy(true); setNotice('');
+    try {
+      let media = null;
+      if (file) media = await uploadMedia(file, 'konnekt-public-media', `statuses/${user.id}`);
+      const { error } = await supabase.from('statuses').insert({ user_id: user.id, text_content: text.trim() || null, media_url: media?.url || null, media_type: media?.type || 'text', expires_at: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() });
+      if (error) throw error;
+      navigation.goBack();
+    } catch (error) { setNotice(error.message || 'Could not publish your status.'); }
+    finally { setBusy(false); }
+  };
+  return <View style={s.container}>
+    <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.back}>‹ Back to Status</Text></TouchableOpacity>
+    <Text style={s.title}>Create a status</Text>
+    <Text style={s.hint}>Share a thought, photo or short video. Your status expires after 24 hours.</Text>
+    <TextInput style={s.input} value={text} onChangeText={setText} multiline maxLength={700} placeholder="What's happening?" placeholderTextColor="#8293A8"/>
+    <TouchableOpacity style={s.secondary} onPress={pick}><Text style={s.secondaryText}>＋ Add photo or video</Text></TouchableOpacity>
+    {!!file && <View style={s.fileRow}><Text style={s.file} numberOfLines={1}>{file.name}</Text><TouchableOpacity onPress={() => setFile(null)}><Text style={s.remove}>Remove</Text></TouchableOpacity></View>}
+    <TouchableOpacity style={[s.publish, busy && { opacity: 0.65 }]} onPress={publish} disabled={busy}>{busy ? <ActivityIndicator color="#FFF"/> : <Text style={s.publishText}>PUBLISH STATUS</Text>}</TouchableOpacity>
+    {!!notice && <Text style={s.error}>{notice}</Text>}
+  </View>;
+}
+const s=StyleSheet.create({container:{flex:1,backgroundColor:'#07111F',padding:20},back:{color:'#168BFF',fontSize:16,marginTop:20},title:{color:'#FFF',fontSize:27,fontWeight:'bold',marginTop:24,marginBottom:8},hint:{color:'#8293A8',fontSize:12,lineHeight:19,marginBottom:18},input:{backgroundColor:'#14243A',color:'#FFF',borderRadius:14,padding:16,minHeight:150,textAlignVertical:'top',borderWidth:1,borderColor:'#263A53'},secondary:{borderWidth:1,borderColor:'#168BFF',borderRadius:12,padding:15,alignItems:'center',marginTop:15},secondaryText:{color:'#8CCBFF',fontWeight:'bold'},fileRow:{flexDirection:'row',alignItems:'center',justifyContent:'space-between',gap:10,marginTop:12},file:{color:'#B8C8D9',flex:1},remove:{color:'#FF8795',fontWeight:'bold'},publish:{backgroundColor:'#168BFF',borderRadius:12,padding:16,alignItems:'center',marginTop:22},publishText:{color:'#FFF',fontWeight:'bold'},error:{color:'#FF8795',marginTop:12,lineHeight:19}});
