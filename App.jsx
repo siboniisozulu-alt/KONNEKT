@@ -11,11 +11,11 @@ import {
 } from 'react-native';
 
 // Main KONNEKT screens
-import ChatsScreen from './src/screens/ChatsScreen';
-import WatchScreen from './src/screens/WatchScreen';
-import StatusScreen from './src/screens/StatusScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
-import HashtagScreen from './src/screens/HashtagScreen';
+import ChatsScreen from './src/screens/ChatsScreen.jsx';
+import WatchScreen from './src/screens/WatchScreen.jsx';
+import StatusScreen from './src/screens/StatusScreen.jsx';
+import ProfileScreen from './src/screens/ProfileScreen.jsx';
+import HashtagScreen from './src/screens/HashtagScreen.jsx';
 
 // Secondary screens
 import ChatConversationScreen from './src/screens/ChatConversationScreen';
