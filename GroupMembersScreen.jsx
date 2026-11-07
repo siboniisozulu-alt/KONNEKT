@@ -10,51 +10,15 @@ import {
   Alert,
 } from 'react-native';
 
-const demoMembers = [
-  {
-    id: '1',
-    name: 'Thandeka',
-    username: '@thandeka',
-    role: 'Admin',
-    color: '#D6EAF8',
-  },
-  {
-    id: '2',
-    name: 'Thabo',
-    username: '@thabo',
-    role: 'Admin',
-    color: '#FADBD8',
-  },
-  {
-    id: '3',
-    name: 'Lerato',
-    username: '@lerato',
-    role: 'Member',
-    color: '#D5F5E3',
-  },
-  {
-    id: '4',
-    name: 'Sipho',
-    username: '@sipho',
-    role: 'Member',
-    color: '#FCF3CF',
-  },
-  {
-    id: '5',
-    name: 'Nomsa',
-    username: '@nomsa',
-    role: 'Member',
-    color: '#E8DAEF',
-  },
-];
+const demoMembers = [];
 
 export default function GroupMembersScreen({ navigation, route }) {
   const group = route?.params?.group || {
-    name: 'KONNEKT Friends',
+    name: route?.params?.groupName || 'Group',
   };
 
   const [members, setMembers] = useState(
-    route?.params?.members || demoMembers
+    route?.params?.members || []
   );
 
   const [search, setSearch] = useState('');

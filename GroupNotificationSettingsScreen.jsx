@@ -15,7 +15,7 @@ export default function GroupNotificationSettingsScreen({
   route,
 }) {
   const group = route?.params?.group || {
-    name: 'KONNEKT Friends',
+    name: route?.params?.groupName || 'Group',
   };
 
   const [settings, setSettings] = useState({

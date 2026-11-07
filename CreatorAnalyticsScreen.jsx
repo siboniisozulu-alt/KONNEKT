@@ -12,54 +12,32 @@ const periods = ['7 days', '30 days', '90 days'];
 
 const analyticsData = {
   '7 days': {
-    views: '12,450',
-    likes: '1,240',
-    comments: '325',
-    shares: '180',
-    followers: '+145',
-    engagement: '8.6%',
+    views: '—',
+    likes: '—',
+    comments: '—',
+    shares: '—',
+    followers: '—',
+    engagement: '—',
   },
   '30 days': {
-    views: '48,900',
-    likes: '5,420',
-    comments: '1,180',
-    shares: '760',
-    followers: '+620',
-    engagement: '9.2%',
+    views: '—',
+    likes: '—',
+    comments: '—',
+    shares: '—',
+    followers: '—',
+    engagement: '—',
   },
   '90 days': {
-    views: '126,700',
-    likes: '13,850',
-    comments: '3,420',
-    shares: '2,140',
-    followers: '+1,850',
-    engagement: '10.1%',
+    views: '—',
+    likes: '—',
+    comments: '—',
+    shares: '—',
+    followers: '—',
+    engagement: '—',
   },
 };
 
-const topVideos = [
-  {
-    id: '1',
-    title: 'My first KONNEKT video',
-    views: '25,400',
-    likes: '2,300',
-    emoji: '🎬',
-  },
-  {
-    id: '2',
-    title: 'Weekend vibes',
-    views: '18,200',
-    likes: '1,750',
-    emoji: '🌍',
-  },
-  {
-    id: '3',
-    title: 'Behind the scenes',
-    views: '9,800',
-    likes: '920',
-    emoji: '📸',
-  },
-];
+const topVideos = [];
 
 export default function CreatorAnalyticsScreen({ navigation }) {
   const [selectedPeriod, setSelectedPeriod] = useState('7 days');
@@ -190,8 +168,7 @@ export default function CreatorAnalyticsScreen({ navigation }) {
       </View>
 
       <Text style={styles.footer}>
-        All displayed analytics are sample figures. Real statistics
-        require KONNEKT's backend and event tracking.
+        Analytics will appear here as your account receives real activity.
       </Text>
     </ScrollView>
   );

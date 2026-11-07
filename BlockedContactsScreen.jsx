@@ -10,26 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-const sampleBlockedContacts = [
-  {
-    id: '1',
-    name: 'Unknown Contact',
-    phone: '+27 71 000 0001',
-    date: 'Blocked recently',
-  },
-  {
-    id: '2',
-    name: 'Example User',
-    phone: '+27 72 000 0002',
-    date: 'Blocked last week',
-  },
-  {
-    id: '3',
-    name: 'Test Contact',
-    phone: '+27 73 000 0003',
-    date: 'Blocked last month',
-  },
-];
+const sampleBlockedContacts = [];
 
 export default function BlockedContactsScreen({ navigation }) {
   const [contacts, setContacts] = useState(sampleBlockedContacts);

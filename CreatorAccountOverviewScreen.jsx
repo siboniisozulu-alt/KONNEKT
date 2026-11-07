@@ -10,12 +10,12 @@ import {
 
 export default function CreatorAccountOverviewScreen({ navigation }) {
   const creator = {
-    name: 'KONNEKT Creator',
-    username: '@konnektcreator',
-    category: 'Digital Creator',
-    followers: '2,450',
-    following: '380',
-    videos: '42',
+    name: 'Your creator profile',
+    username: '',
+    category: 'Creator',
+    followers: '—',
+    following: '—',
+    videos: '—',
   };
 
   const tools = [
@@ -216,7 +216,7 @@ export default function CreatorAccountOverviewScreen({ navigation }) {
       <View style={styles.notice}>
         <Text style={styles.noticeTitle}>Prototype information</Text>
         <Text style={styles.noticeText}>
-          Profile details and statistics are sample data.
+          Creator profile statistics will appear when real creator activity is available.
           Creator earnings, subscriptions and verification are
           not active services. Real account data will require
           backend integration.

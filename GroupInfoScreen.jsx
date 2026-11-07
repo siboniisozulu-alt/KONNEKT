@@ -9,22 +9,17 @@ import {
   Alert,
 } from 'react-native';
 
-const sampleMembers = [
-  { id: '1', name: 'Thabo Mokoena', role: 'Admin', initials: 'TM' },
-  { id: '2', name: 'Lerato Dlamini', role: 'Member', initials: 'LD' },
-  { id: '3', name: 'Sipho Nkosi', role: 'Member', initials: 'SN' },
-  { id: '4', name: 'Amahle Zulu', role: 'Member', initials: 'AZ' },
-];
+const sampleMembers = [];
 
 export default function GroupInfoScreen({ navigation, route }) {
   const group = route?.params?.group || {
-    id: 'demo',
-    name: 'KONNEKT Friends',
-    description: 'A place for friends to connect.',
-    members: sampleMembers,
+    id: '',
+    name: route?.params?.groupName || 'Group',
+    description: '',
+    members: [],
   };
 
-  const members = group.members || sampleMembers;
+  const members = group.members || [];
 
   const showMessage = (title, message) => {
     Alert.alert(title, message);

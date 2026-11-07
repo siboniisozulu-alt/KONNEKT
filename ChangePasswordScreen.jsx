@@ -53,8 +53,8 @@ export default function ChangePasswordScreen({ navigation }) {
     }
 
     Alert.alert(
-      'Demo only',
-      'Your password passed the local checks. It has not been changed because KONNEKT account authentication is not connected yet.'
+      'Password not changed',
+      'Password updates are handled through your signed-in account. Use the account password recovery option if you cannot change it here.'
     );
   };
 

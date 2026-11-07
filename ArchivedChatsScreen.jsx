@@ -10,44 +10,11 @@ import {
   Alert,
 } from 'react-native';
 
-const sampleArchivedChats = [
-  {
-    id: '1',
-    name: 'Thabo Mokoena',
-    message: 'See you tomorrow!',
-    time: '09:15',
-    unread: 0,
-    online: true,
-  },
-  {
-    id: '2',
-    name: 'KONNEKT Business Group',
-    message: 'New business opportunity shared.',
-    time: 'Yesterday',
-    unread: 3,
-    online: false,
-  },
-  {
-    id: '3',
-    name: 'Lerato Nkosi',
-    message: 'Thank you for your help.',
-    time: 'Monday',
-    unread: 0,
-    online: false,
-  },
-  {
-    id: '4',
-    name: 'Sipho Dlamini',
-    message: 'Send me the details when ready.',
-    time: 'Sunday',
-    unread: 0,
-    online: false,
-  },
-];
+const sampleArchivedChats = [];
 
 export default function ArchivedChatsScreen({ navigation }) {
   const [search, setSearch] = useState('');
-  const [chats, setChats] = useState(sampleArchivedChats);
+  const [chats, setChats] = useState([]);
 
   const filteredChats = chats.filter((chat) =>
     chat.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -69,7 +36,7 @@ export default function ArchivedChatsScreen({ navigation }) {
 
             Alert.alert(
               'Conversation unarchived',
-              'This demo removes it from the archived list. Backend syncing is not connected yet.'
+              'Archive management is not connected to the account database yet. No server-side change was made.'
             );
           },
         },

@@ -9,35 +9,7 @@ import {
   Alert,
 } from 'react-native';
 
-const campaigns = [
-  {
-    id: '1',
-    brand: 'Local Fashion Campaign',
-    category: 'Fashion',
-    description: 'Create content featuring local fashion products.',
-    reward: 'Example: R1,500',
-    status: 'Open',
-    emoji: '👕',
-  },
-  {
-    id: '2',
-    brand: 'Food and Lifestyle Campaign',
-    category: 'Food',
-    description: 'Showcase a food or lifestyle business.',
-    reward: 'Example: R900',
-    status: 'Open',
-    emoji: '🍔',
-  },
-  {
-    id: '3',
-    brand: 'Technology Creator Campaign',
-    category: 'Technology',
-    description: 'Create a demonstration of a technology product.',
-    reward: 'Example: R2,000',
-    status: 'Coming soon',
-    emoji: '📱',
-  },
-];
+const campaigns = [];
 
 export default function CreatorBrandPartnershipsScreen({ navigation }) {
   const [selectedTab, setSelectedTab] = useState('Discover');
@@ -50,20 +22,20 @@ export default function CreatorBrandPartnershipsScreen({ navigation }) {
     }
 
     if (applications.includes(campaign.id)) {
-      Alert.alert('Already applied', 'You have already applied to this sample campaign.');
+      Alert.alert('Already applied', 'You have already selected this campaign.');
       return;
     }
 
     Alert.alert(
       'Campaign application',
-      `Apply for ${campaign.brand}? This prototype will only record a local sample application.`,
+      `Apply for ${campaign.brand}? Campaign applications are not connected to a live brand system yet.`,
       [
         { text: 'Cancel', style: 'cancel' },
         {
           text: 'Apply',
           onPress: () => {
             setApplications(current => [...current, campaign.id]);
-            Alert.alert('Demo application', 'Your sample application has been added locally. No brand has received it.');
+            Alert.alert('Demo application', 'Applications are not being submitted. Brand partnerships are not active yet.');
           },
         },
       ]

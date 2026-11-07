@@ -9,38 +9,7 @@ import {
   ScrollView,
 } from 'react-native';
 
-const sampleMessages = [
-  {
-    id: '1',
-    sender: 'Thabo',
-    message: 'Are we meeting tomorrow?',
-    date: 'Today, 09:15',
-  },
-  {
-    id: '2',
-    sender: 'You',
-    message: 'Yes, I will be there.',
-    date: 'Today, 09:20',
-  },
-  {
-    id: '3',
-    sender: 'Thabo',
-    message: 'Please send me the photos.',
-    date: 'Yesterday, 16:30',
-  },
-  {
-    id: '4',
-    sender: 'You',
-    message: 'I will share the documents tonight.',
-    date: 'Yesterday, 16:45',
-  },
-  {
-    id: '5',
-    sender: 'Thabo',
-    message: 'Thank you for the information.',
-    date: 'Monday, 12:10',
-  },
-];
+const sampleMessages = [];
 
 export default function ChatSearchScreen({ navigation, route }) {
   const contact = route?.params?.contact || {
@@ -57,8 +26,7 @@ export default function ChatSearchScreen({ navigation, route }) {
       item.message.toLowerCase().includes(search.toLowerCase()) ||
       item.sender.toLowerCase().includes(search.toLowerCase());
 
-    // Sample messages are text-only. Other media filters
-    // will work when real message data is connected.
+    // Search results are supplied by the conversation history.
     const matchesFilter = filter === 'All';
 
     return matchesSearch && matchesFilter;

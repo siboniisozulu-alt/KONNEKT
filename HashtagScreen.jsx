@@ -22,40 +22,7 @@ const trendingHashtags = [
   { id: '8', tag: 'LearnOnKONNEKT', posts: '28K', category: 'Education' },
 ];
 
-const sampleVideos = [
-  {
-    id: '1',
-    title: 'Welcome to the KONNEKT community!',
-    creator: '@konnekt_official',
-    hashtag: 'KONNEKT',
-    emoji: '🤝',
-    views: '15K',
-  },
-  {
-    id: '2',
-    title: 'Beautiful places around Mzansi',
-    creator: '@travel_za',
-    hashtag: 'SouthAfrica',
-    emoji: '🇿🇦',
-    views: '22K',
-  },
-  {
-    id: '3',
-    title: 'Township life moments',
-    creator: '@kasi_creator',
-    hashtag: 'KasiLife',
-    emoji: '🏘️',
-    views: '18K',
-  },
-  {
-    id: '4',
-    title: 'Make your day with laughter',
-    creator: '@comedy_zone',
-    hashtag: 'FunnyVideos',
-    emoji: '😂',
-    views: '31K',
-  },
-];
+const sampleVideos = [];
 
 export default function HashtagScreen({ navigation, route }) {
   const [search, setSearch] = useState(
@@ -169,7 +136,7 @@ export default function HashtagScreen({ navigation, route }) {
           <View style={styles.emptyVideo}>
             <Text style={styles.emptyIcon}>🎬</Text>
             <Text style={styles.emptyText}>
-              No sample videos found for this hashtag.
+              No posts found for this hashtag yet.
             </Text>
           </View>
         ) : (

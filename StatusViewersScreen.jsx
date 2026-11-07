@@ -9,49 +9,13 @@ import {
   TextInput,
 } from 'react-native';
 
-const sampleViewers = [
-  {
-    id: '1',
-    name: 'Thabo Mokoena',
-    username: '@thabo',
-    time: '2 minutes ago',
-    initials: 'TM',
-  },
-  {
-    id: '2',
-    name: 'Lerato Dlamini',
-    username: '@lerato',
-    time: '15 minutes ago',
-    initials: 'LD',
-  },
-  {
-    id: '3',
-    name: 'Sipho Nkosi',
-    username: '@sipho',
-    time: '30 minutes ago',
-    initials: 'SN',
-  },
-  {
-    id: '4',
-    name: 'Amahle Zulu',
-    username: '@amahle',
-    time: '1 hour ago',
-    initials: 'AZ',
-  },
-  {
-    id: '5',
-    name: 'Nomsa Khumalo',
-    username: '@nomsa',
-    time: '2 hours ago',
-    initials: 'NK',
-  },
-];
+const sampleViewers = [];
 
 export default function StatusViewersScreen({ navigation, route }) {
   const [search, setSearch] = useState('');
 
-  // Demo data only. Real viewers must come from the backend.
-  const viewers = route?.params?.viewers || sampleViewers;
+  // Viewer data must be supplied by the status backend.
+  const viewers = route?.params?.viewers || [];
 
   const filteredViewers = viewers.filter((viewer) =>
     viewer.name.toLowerCase().includes(search.toLowerCase()) ||

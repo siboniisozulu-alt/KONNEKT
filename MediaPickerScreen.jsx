@@ -18,17 +18,7 @@ export default function MediaPickerScreen({ navigation, route }) {
   const [selectedItems, setSelectedItems] = useState([]);
 
   // Demo gallery items. Real device media will be loaded later.
-  const demoMedia = [
-    { id: '1', icon: '🌄', name: 'Image 1' },
-    { id: '2', icon: '🌅', name: 'Image 2' },
-    { id: '3', icon: '🌇', name: 'Image 3' },
-    { id: '4', icon: '🌳', name: 'Image 4' },
-    { id: '5', icon: '🏖️', name: 'Image 5' },
-    { id: '6', icon: '🌻', name: 'Image 6' },
-    { id: '7', icon: '🌃', name: 'Image 7' },
-    { id: '8', icon: '🌈', name: 'Image 8' },
-    { id: '9', icon: '🌺', name: 'Image 9' },
-  ];
+  const demoMedia = [];
 
   const toggleSelection = (id) => {
     setSelectedItems((previous) =>

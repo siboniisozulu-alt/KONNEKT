@@ -10,18 +10,9 @@ import {
   Alert,
 } from 'react-native';
 
-const initialViewers = [
-  { id: '1', name: 'Thando M.', username: '@thando', role: 'Viewer', muted: false },
-  { id: '2', name: 'Sipho K.', username: '@sipho', role: 'Viewer', muted: false },
-  { id: '3', name: 'Lerato P.', username: '@lerato', role: 'Moderator', muted: false },
-  { id: '4', name: 'Ayanda N.', username: '@ayanda', role: 'Viewer', muted: false },
-];
+const initialViewers = [];
 
-const initialComments = [
-  { id: '1', username: '@thando', message: 'This live is amazing!' },
-  { id: '2', username: '@sipho', message: 'Greetings everyone!' },
-  { id: '3', username: '@ayanda', message: 'Please play some music.' },
-];
+const initialComments = [];
 
 export default function LiveStreamModerationScreen({ navigation, route }) {
   const [viewers, setViewers] = useState(initialViewers);

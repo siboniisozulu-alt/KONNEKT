@@ -10,13 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-const sampleContacts = [
-  { id: '1', name: 'Thabo Mokoena', username: '@thabo' },
-  { id: '2', name: 'Lerato Dlamini', username: '@lerato' },
-  { id: '3', name: 'Sipho Nkosi', username: '@sipho' },
-  { id: '4', name: 'Amahle Zulu', username: '@amahle' },
-  { id: '5', name: 'Nomsa Khumalo', username: '@nomsa' },
-];
+const sampleContacts = [];
 
 export default function CreateGroupScreen({ navigation, route }) {
   const [groupName, setGroupName] = useState('');
@@ -24,7 +18,7 @@ export default function CreateGroupScreen({ navigation, route }) {
   const [search, setSearch] = useState('');
   const [selectedMembers, setSelectedMembers] = useState([]);
 
-  const contacts = route?.params?.contacts || sampleContacts;
+  const contacts = route?.params?.contacts || [];
 
   const filteredContacts = contacts.filter((contact) =>
     contact.name.toLowerCase().includes(search.toLowerCase())

@@ -10,14 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-const sampleContacts = [
-  { id: '1', name: 'Thabo Mokoena', phone: '+27 71 234 5678' },
-  { id: '2', name: 'Lerato Nkosi', phone: '+27 82 345 6789' },
-  { id: '3', name: 'Sipho Dlamini', phone: '+27 73 456 7890' },
-  { id: '4', name: 'Nomsa Zulu', phone: '+27 76 567 8901' },
-  { id: '5', name: 'Ayanda Khumalo', phone: '+27 79 678 9012' },
-  { id: '6', name: 'Zanele Ndlovu', phone: '+27 81 789 0123' },
-];
+const sampleContacts = [];
 
 export default function ShareContactScreen({ navigation, route }) {
   const recipient = route?.params?.contact || {
@@ -27,7 +20,7 @@ export default function ShareContactScreen({ navigation, route }) {
   const [search, setSearch] = useState('');
   const [selectedContacts, setSelectedContacts] = useState([]);
 
-  const filteredContacts = sampleContacts.filter((contact) =>
+  const filteredContacts = (route?.params?.contacts || []).filter((contact) =>
     contact.name.toLowerCase().includes(search.toLowerCase()) ||
     contact.phone.includes(search)
   );
@@ -49,7 +42,7 @@ export default function ShareContactScreen({ navigation, route }) {
       return;
     }
 
-    const names = sampleContacts
+    const names = (route?.params?.contacts || [])
       .filter((item) => selectedContacts.includes(item.id))
       .map((item) => item.name)
       .join(', ');

@@ -10,68 +10,7 @@ import {
   Alert,
 } from 'react-native';
 
-const initialSettings = [
-  {
-    id: 'messages',
-    title: 'Direct messages',
-    description: 'Notifications for private chats.',
-    value: true,
-  },
-  {
-    id: 'groups',
-    title: 'Group messages',
-    description: 'Notifications from your groups.',
-    value: true,
-  },
-  {
-    id: 'calls',
-    title: 'Calls',
-    description: 'Incoming voice and video calls.',
-    value: true,
-  },
-  {
-    id: 'statuses',
-    title: 'Status updates',
-    description: 'Updates from your contacts.',
-    value: true,
-  },
-  {
-    id: 'likes',
-    title: 'Likes and reactions',
-    description: 'When people react to your content.',
-    value: true,
-  },
-  {
-    id: 'comments',
-    title: 'Comments',
-    description: 'Comments on your videos and posts.',
-    value: true,
-  },
-  {
-    id: 'followers',
-    title: 'New followers',
-    description: 'When someone follows your account.',
-    value: true,
-  },
-  {
-    id: 'live',
-    title: 'Live streams',
-    description: 'Live stream invitations and reminders.',
-    value: true,
-  },
-  {
-    id: 'recommendations',
-    title: 'Recommendations',
-    description: 'Suggested creators and videos.',
-    value: false,
-  },
-  {
-    id: 'security',
-    title: 'Security alerts',
-    description: 'Important account and login alerts.',
-    value: true,
-  },
-];
+const initialSettings = [];
 
 export default function NotificationSettingsScreen({ navigation }) {
   const [settings, setSettings] = useState(initialSettings);
