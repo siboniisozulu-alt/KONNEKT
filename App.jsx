@@ -10,10 +10,9 @@ import {
 
 /*
  * One navigation system for the whole KONNEKT web app.
- * Vite discovers every screen in src/screens, so .js and .jsx files
- * are both supported without maintaining dozens of fragile imports.
+ * Every screen containing JSX uses the .jsx extension for reliable Vite parsing.
  */
-const discoveredScreens = import.meta.glob('./src/screens/*.{js,jsx}', {
+const discoveredScreens = import.meta.glob('./src/screens/*.jsx', {
   eager: true,
   import: 'default'
 });
@@ -36,11 +35,11 @@ const routeAliases = {
 };
 
 const tabs = [
-  { name: 'Chats', icon: 'ðŸ’¬' },
-  { name: 'Reels', icon: 'ðŸŽ¬' },
-  { name: 'Status', icon: 'â—‰' },
-  { name: 'Discover', icon: 'âŒ•' },
-  { name: 'Profile', icon: 'ðŸ‘¤' }
+  { name: 'Chats', icon: '💬' },
+  { name: 'Reels', icon: '🎬' },
+  { name: 'Status', icon: '◉' },
+  { name: 'Discover', icon: '⌕' },
+  { name: 'Profile', icon: '👤' }
 ];
 
 export default function App() {
@@ -105,7 +104,7 @@ export default function App() {
               style={styles.backButton}
               onPress={navigation.goBack}
             >
-              <Text style={styles.backText}>â† Go back</Text>
+              <Text style={styles.backText}>← Go back</Text>
             </TouchableOpacity>
           </View>
         )}
