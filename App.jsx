@@ -1,119 +1,151 @@
 
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View,
   Text,
-  StyleSheet,
   TouchableOpacity,
-  StatusBar,
+  StyleSheet,
   SafeAreaView,
-  ScrollView,
-  Alert,
+  StatusBar,
+  ScrollView
 } from 'react-native';
 
+// Main KONNEKT screens
+import ChatsScreen from './src/screens/ChatsScreen';
+import WatchScreen from './src/screens/WatchScreen';
+import StatusScreen from './src/screens/StatusScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
+import HashtagScreen from './src/screens/HashtagScreen';
+
+// Secondary screens
+import ChatConversationScreen from './src/screens/ChatConversationScreen';
+import NewChatScreen from './src/screens/NewChatScreen';
+import AccountSettingsScreen from './src/screens/AccountSettingsScreen';
+import LoginScreen from './src/screens/LoginScreen';
+
+const tabs = [
+  { name: 'Chats', icon: '💬' },
+  { name: 'Reels', icon: '🎬' },
+  { name: 'Status', icon: '📸' },
+  { name: 'Discover', icon: '🌍' },
+  { name: 'Profile', icon: '👤' }
+];
+
 export default function App() {
-  const handleLogin = () => {
-    Alert.alert(
-      'KONNEKT Login',
-      'Phone number login will be connected in our authentication files.'
-    );
+  const [stack, setStack] = useState([
+    { name: 'Chats', params: {} }
+  ]);
+
+  const currentRoute = stack[stack.length - 1];
+
+  const navigation = {
+    navigate: (name, params = {}) => {
+      setStack(previous => [
+        ...previous,
+        { name, params }
+      ]);
+    },
+
+    goBack: () => {
+      setStack(previous =>
+        previous.length > 1
+          ? previous.slice(0, -1)
+          : previous
+      );
+    },
+
+    replace: (name, params = {}) => {
+      setStack(previous => [
+        ...previous.slice(0, -1),
+        { name, params }
+      ]);
+    },
+
+    getParam: (name) => currentRoute.params?.[name]
   };
 
-  const handleSignUp = () => {
-    Alert.alert(
-      'Join KONNEKT',
-      'Phone number registration will be connected in our authentication files.'
-    );
+  const openTab = (name) => {
+    setStack([{ name, params: {} }]);
   };
+
+  const screens = {
+    Chats: ChatsScreen,
+    Reels: WatchScreen,
+    Watch: WatchScreen,
+    Status: StatusScreen,
+    Discover: HashtagScreen,
+    Hashtag: HashtagScreen,
+    Profile: ProfileScreen,
+    ChatConversation: ChatConversationScreen,
+    NewChat: NewChatScreen,
+    AccountSettings: AccountSettingsScreen,
+    Login: LoginScreen
+  };
+
+  const ActiveScreen = screens[currentRoute.name];
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar
-        backgroundColor="#071426"
+        backgroundColor="#080812"
         barStyle="light-content"
       />
 
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        showsVerticalScrollIndicator={false}
-      >
-        <View style={styles.logoContainer}>
-          <View style={styles.logoCircle}>
-            <Text style={styles.logoLetter}>K</Text>
-          </View>
-
-          <Text style={styles.logoText}>KONNEKT</Text>
-          <Text style={styles.tagline}>
-            Connect. Create. Share.
-          </Text>
-        </View>
-
-        <View style={styles.welcomeContainer}>
-          <Text style={styles.welcomeTitle}>
-            Welcome to KONNEKT!
-          </Text>
-
-          <Text style={styles.description}>
-            Your social world, all in one place.
-            {'\n\n'}
-            Chat with friends, share your status,
-            discover videos, create content and
-            connect with people through live streams.
-          </Text>
-        </View>
-
-        <View style={styles.features}>
-          <View style={styles.feature}>
-            <Text style={styles.featureIcon}>💬</Text>
-            <Text style={styles.featureText}>Chat</Text>
-          </View>
-
-          <View style={styles.feature}>
-            <Text style={styles.featureIcon}>📸</Text>
-            <Text style={styles.featureText}>Status</Text>
-          </View>
-
-          <View style={styles.feature}>
-            <Text style={styles.featureIcon}>🎬</Text>
-            <Text style={styles.featureText}>Videos</Text>
-          </View>
-
-          <View style={styles.feature}>
-            <Text style={styles.featureIcon}>🔴</Text>
-            <Text style={styles.featureText}>Live</Text>
-          </View>
-        </View>
-
-        <View style={styles.buttons}>
-          <TouchableOpacity
-            style={styles.signUpButton}
-            onPress={handleSignUp}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.signUpText}>
-              CREATE ACCOUNT
+      <View style={styles.screen}>
+        {ActiveScreen ? (
+          <ActiveScreen
+            navigation={navigation}
+            route={{
+              name: currentRoute.name,
+              params: currentRoute.params
+            }}
+          />
+        ) : (
+          <View style={styles.missingScreen}>
+            <Text style={styles.missingTitle}>
+              {currentRoute.name}
             </Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.loginButton}
-            onPress={handleLogin}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.loginText}>
-              LOG IN
+            <Text style={styles.missingText}>
+              This screen still needs to be connected.
             </Text>
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={navigation.goBack}
+            >
+              <Text style={styles.backText}>Go Back</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+
+      {tabs.some(tab => tab.name === currentRoute.name) && (
+        <View style={styles.tabBar}>
+          {tabs.map(tab => {
+            const active = currentRoute.name === tab.name;
+
+            return (
+              <TouchableOpacity
+                key={tab.name}
+                style={styles.tab}
+                onPress={() => openTab(tab.name)}
+              >
+                <Text style={styles.tabIcon}>
+                  {tab.icon}
+                </Text>
+                <Text
+                  style={[
+                    styles.tabLabel,
+                    active && styles.activeTabLabel
+                  ]}
+                >
+                  {tab.name}
+                </Text>
+                {active && <View style={styles.activeLine} />}
+              </TouchableOpacity>
+            );
+          })}
         </View>
-
-        <Text style={styles.footer}>
-          One app. Endless connections.
-        </Text>
-
-        <Text style={styles.version}>
-          KONNEKT © 2026
-        </Text>
-      </ScrollView>
+      )}
     </SafeAreaView>
   );
 }
@@ -121,141 +153,70 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#071426',
+    backgroundColor: '#080812'
   },
-
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 25,
-    paddingVertical: 35,
+  screen: {
+    flex: 1
   },
-
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 45,
-  },
-
-  logoCircle: {
-    width: 90,
-    height: 90,
-    borderRadius: 25,
-    backgroundColor: '#168BFF',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 15,
-    elevation: 8,
-  },
-
-  logoLetter: {
-    fontSize: 55,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-  },
-
-  logoText: {
-    fontSize: 34,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    letterSpacing: 4,
-  },
-
-  tagline: {
-    fontSize: 14,
-    color: '#55B5FF',
-    marginTop: 8,
-    letterSpacing: 2,
-  },
-
-  welcomeContainer: {
-    alignItems: 'center',
-    marginBottom: 30,
-  },
-
-  welcomeTitle: {
-    fontSize: 27,
-    fontWeight: 'bold',
-    color: '#FFFFFF',
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-
-  description: {
-    fontSize: 15,
-    lineHeight: 25,
-    color: '#B7C8DC',
-    textAlign: 'center',
-  },
-
-  features: {
+  tabBar: {
+    height: 68,
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 40,
-  },
-
-  feature: {
+    backgroundColor: '#0D1424',
+    borderTopWidth: 1,
+    borderTopColor: '#263A53',
+    justifyContent: 'space-around',
     alignItems: 'center',
-    backgroundColor: '#102640',
-    borderRadius: 15,
-    paddingVertical: 15,
-    width: '22%',
+    paddingBottom: 5
   },
-
-  featureIcon: {
-    fontSize: 25,
-    marginBottom: 8,
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    height: 62
   },
-
-  featureText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
+  tabIcon: {
+    fontSize: 21,
+    marginBottom: 3
   },
-
-  buttons: {
-    gap: 15,
+  tabLabel: {
+    color: '#8A99AD',
+    fontSize: 10,
+    fontWeight: '600'
   },
-
-  signUpButton: {
+  activeTabLabel: {
+    color: '#168BFF'
+  },
+  activeLine: {
+    width: 22,
+    height: 3,
+    borderRadius: 3,
     backgroundColor: '#168BFF',
-    paddingVertical: 18,
-    borderRadius: 14,
-    alignItems: 'center',
+    marginTop: 4
   },
-
-  signUpText: {
+  missingScreen: {
+    flex: 1,
+    backgroundColor: '#07111F',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 25
+  },
+  missingTitle: {
     color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: 'bold',
-    letterSpacing: 1,
+    fontSize: 24,
+    fontWeight: 'bold'
   },
-
-  loginButton: {
-    borderWidth: 1.5,
-    borderColor: '#168BFF',
-    paddingVertical: 18,
-    borderRadius: 14,
-    alignItems: 'center',
+  missingText: {
+    color: '#B8C4D4',
+    marginTop: 12
   },
-
-  loginText: {
-    color: '#55B5FF',
-    fontSize: 15,
-    fontWeight: 'bold',
-    letterSpacing: 1,
+  backButton: {
+    backgroundColor: '#168BFF',
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 20
   },
-
-  footer: {
-    color: '#B7C8DC',
-    textAlign: 'center',
-    marginTop: 35,
-    fontSize: 13,
-  },
-
-  version: {
-    color: '#657A92',
-    textAlign: 'center',
-    marginTop: 12,
-    fontSize: 11,
-  },
+  backText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold'
+  }
 });
