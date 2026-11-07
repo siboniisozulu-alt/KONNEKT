@@ -22,20 +22,27 @@ export async function getConversationList(userId) {
   }));
   return rows;
 }
-
 export async function createDirectConversation(myId, otherId) {
-  if (!otherId || otherId === myId) throw new Error('Choose another KONNEKT user.');
-  const { data: mine, error: mineError } = await supabase.from('conversation_members').select('conversation_id').eq('user_id', myId);
-  if (mineError) throw mineError;
-  const ids = (mine || []).map(x => x.conversation_id);
-  if (ids.length) {
-    const { data: shared, error } = await supabase.from('conversation_members').select('conversation_id').eq('user_id', otherId).in('conversation_id', ids);
-    if (error) throw error;
-    if (shared?.length) {
-      const { data: conv } = await supabase.from('conversations').select('id').eq('id', shared[0].conversation_id).eq('is_group', false).maybeSingle();
-      if (conv) return conv.id;
-    }
+  if (!otherId || otherId === myId) {
+    throw new Error('Choose another KONNEKT user.');
   }
+
+  const { data, error } = await supabase.rpc(
+    'create_direct_conversation',
+    {
+      target_user_id: otherId
+    }
+  );
+
+  if (error) throw error;
+
+  if (!data) {
+    throw new Error('Supabase did not return a conversation ID.');
+  }
+
+  return data;
+}
+
   const { data: conversation, error } = await supabase.from('conversations').insert({ created_by: myId, is_group: false }).select('id').single();
   if (error) throw error;
   const { error: memberError } = await supabase.from('conversation_members').insert([{ conversation_id: conversation.id, user_id: myId }, { conversation_id: conversation.id, user_id: otherId }]);
