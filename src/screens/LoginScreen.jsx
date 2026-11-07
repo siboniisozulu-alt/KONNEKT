@@ -1,249 +1,36 @@
-
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  StyleSheet,
-  KeyboardAvoidingView,
-  Platform,
-  Alert,
-  ScrollView,
-} from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, ActivityIndicator, Alert } from 'react-native';
+import { supabase } from '../lib_supabase';
 
 export default function LoginScreen({ navigation }) {
-  const [countryCode, setCountryCode] = useState('+27');
-  const [phoneNumber, setPhoneNumber] = useState('');
-
-  const handleLogin = () => {
-    const cleanedNumber = phoneNumber.replace(/\s/g, '');
-
-    if (!cleanedNumber || cleanedNumber.length < 9) {
-      Alert.alert(
-        'Invalid phone number',
-        'Please enter a valid registered phone number.'
-      );
-      return;
-    }
-
-    navigation.navigate('PhoneVerification', {
-      phoneNumber: `${countryCode}${cleanedNumber}`,
-      purpose: 'login',
-    });
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const login = async () => {
+    setError('');
+    if (!email.trim() || !password) return setError('Enter your email address and password.');
+    setBusy(true);
+    const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+    setBusy(false);
+    if (authError) setError(authError.message);
   };
-
-  return (
-    <KeyboardAvoidingView
-      style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
-    >
-      <ScrollView
-        contentContainerStyle={styles.content}
-        keyboardShouldPersistTaps="handled"
-      >
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => navigation.goBack()}
-        >
-          <Text style={styles.backText}>← Back</Text>
-        </TouchableOpacity>
-
-        <View style={styles.logoContainer}>
-          <Text style={styles.logo}>K</Text>
-          <Text style={styles.brand}>KONNEKT</Text>
-        </View>
-
-        <Text style={styles.title}>Welcome Back!</Text>
-
-        <Text style={styles.description}>
-          Log in using the phone number registered
-          with your KONNEKT account.
-        </Text>
-
-        <Text style={styles.label}>Phone number</Text>
-
-        <View style={styles.phoneContainer}>
-          <TextInput
-            style={styles.countryCode}
-            value={countryCode}
-            onChangeText={setCountryCode}
-            keyboardType="phone-pad"
-            maxLength={4}
-          />
-
-          <TextInput
-            style={styles.phoneInput}
-            placeholder="Enter phone number"
-            placeholderTextColor="#8293A8"
-            value={phoneNumber}
-            onChangeText={setPhoneNumber}
-            keyboardType="phone-pad"
-            maxLength={15}
-          />
-        </View>
-
-        <TouchableOpacity
-          style={styles.loginButton}
-          onPress={handleLogin}
-        >
-          <Text style={styles.loginButtonText}>
-            CONTINUE
-          </Text>
-        </TouchableOpacity>
-
-        <View style={styles.signupContainer}>
-          <Text style={styles.signupText}>
-            Don't have an account?
-          </Text>
-
-          <TouchableOpacity
-            onPress={() => navigation.navigate('SignUp')}
-          >
-            <Text style={styles.signupLink}>
-              Sign Up
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        <Text style={styles.security}>
-          Your account and personal information
-          are protected by KONNEKT.
-        </Text>
-      </ScrollView>
-    </KeyboardAvoidingView>
-  );
+  const resetPassword = async () => {
+    if (!email.trim()) return setError('Enter your email address first.');
+    const { error: resetError } = await supabase.auth.resetPasswordForEmail(email.trim().toLowerCase(), { redirectTo: window.location.origin + window.location.pathname });
+    setError(resetError ? resetError.message : 'Password reset email sent. Check your inbox.');
+  };
+  return <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
+    <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.back}>‹ Back</Text></TouchableOpacity>
+    <Text style={styles.logo}>KONNEKT</Text><Text style={styles.title}>Welcome back</Text>
+    <Text style={styles.sub}>Log in with your email and password.</Text>
+    <TextInput style={styles.input} placeholder="Email address" placeholderTextColor="#8A99AD" value={email} onChangeText={setEmail} autoCapitalize="none" keyboardType="email-address" autoComplete="email" />
+    <TextInput style={styles.input} placeholder="Password" placeholderTextColor="#8A99AD" value={password} onChangeText={setPassword} secureTextEntry autoComplete="password" />
+    {!!error && <Text style={styles.error}>{error}</Text>}
+    <TouchableOpacity style={styles.button} onPress={login} disabled={busy}>{busy ? <ActivityIndicator color="#07111F"/> : <Text style={styles.buttonText}>LOG IN</Text>}</TouchableOpacity>
+    <TouchableOpacity onPress={resetPassword}><Text style={styles.link}>Forgot password?</Text></TouchableOpacity>
+    <TouchableOpacity onPress={() => navigation.navigate('SignUp')}><Text style={styles.link}>Create a new account</Text></TouchableOpacity>
+    <Text style={styles.note}>Email authentication is provided by Supabase. Phone/SMS verification is not required for this first release.</Text>
+  </ScrollView>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#071426',
-  },
-
-  content: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    padding: 25,
-  },
-
-  backButton: {
-    marginBottom: 35,
-  },
-
-  backText: {
-    color: '#55B5FF',
-    fontSize: 16,
-  },
-
-  logoContainer: {
-    alignItems: 'center',
-    marginBottom: 35,
-  },
-
-  logo: {
-    width: 70,
-    height: 70,
-    borderRadius: 20,
-    backgroundColor: '#168BFF',
-    color: '#FFFFFF',
-    fontSize: 45,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    textAlignVertical: 'center',
-    overflow: 'hidden',
-  },
-
-  brand: {
-    color: '#FFFFFF',
-    fontSize: 27,
-    fontWeight: 'bold',
-    letterSpacing: 3,
-    marginTop: 12,
-  },
-
-  title: {
-    color: '#FFFFFF',
-    fontSize: 29,
-    fontWeight: 'bold',
-    marginBottom: 12,
-  },
-
-  description: {
-    color: '#B7C8DC',
-    fontSize: 15,
-    lineHeight: 23,
-    marginBottom: 35,
-  },
-
-  label: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 12,
-  },
-
-  phoneContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#102640',
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    alignItems: 'center',
-    marginBottom: 25,
-  },
-
-  countryCode: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    width: 65,
-    paddingVertical: 17,
-    borderRightWidth: 1,
-    borderRightColor: '#35506C',
-  },
-
-  phoneInput: {
-    flex: 1,
-    color: '#FFFFFF',
-    fontSize: 15,
-    paddingHorizontal: 12,
-    paddingVertical: 17,
-  },
-
-  loginButton: {
-    backgroundColor: '#168BFF',
-    padding: 18,
-    borderRadius: 12,
-    alignItems: 'center',
-  },
-
-  loginButtonText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold',
-    fontSize: 15,
-  },
-
-  signupContainer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 30,
-    gap: 6,
-  },
-
-  signupText: {
-    color: '#B7C8DC',
-    fontSize: 14,
-  },
-
-  signupLink: {
-    color: '#55B5FF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-
-  security: {
-    color: '#657A92',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 40,
-  },
-});
+const styles = StyleSheet.create({ page:{flexGrow:1,justifyContent:'center',backgroundColor:'#07111F',padding:25},back:{color:'#55B5FF',fontSize:16,marginBottom:30},logo:{color:'#168BFF',fontSize:30,fontWeight:'bold',letterSpacing:3,textAlign:'center',marginBottom:35},title:{color:'#FFF',fontSize:28,fontWeight:'bold',marginBottom:10},sub:{color:'#B8C4D4',marginBottom:25},input:{backgroundColor:'#14243A',borderColor:'#263A53',borderWidth:1,borderRadius:12,padding:16,color:'#FFF',marginBottom:14,fontSize:15},button:{backgroundColor:'#168BFF',padding:17,borderRadius:12,alignItems:'center',marginTop:8},buttonText:{color:'#FFF',fontWeight:'bold'},link:{color:'#55B5FF',textAlign:'center',marginTop:22,fontWeight:'600'},error:{color:'#FF8795',marginBottom:12},note:{color:'#71849B',fontSize:12,textAlign:'center',marginTop:28,lineHeight:18}});

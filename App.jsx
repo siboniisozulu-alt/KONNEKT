@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
+import { AuthProvider, useAuth } from './src/AuthContext';
 import {
   View,
   Text,
@@ -42,10 +43,13 @@ const tabs = [
   { name: 'Profile', icon: '👤' }
 ];
 
-export default function App() {
-  const [stack, setStack] = useState([
-    { name: 'Welcome', params: {} }
-  ]);
+function AppShell() {
+  const { session, user, loading, recovery } = useAuth();
+  const [stack, setStack] = useState([{ name: 'Welcome', params: {} }]);
+
+  useEffect(() => {
+    if (!loading) setStack([{ name: recovery ? 'PasswordReset' : (session ? 'Chats' : 'Welcome'), params: {} }]);
+  }, [loading, session?.user?.id, recovery]);
 
   const currentRoute = stack[stack.length - 1] || {
     name: 'Welcome',
@@ -78,6 +82,12 @@ export default function App() {
   const ActiveScreen = screenRegistry[screenKey];
   const isMainTab = tabs.some(tab => tab.name === currentRoute.name);
 
+  if (loading) return (
+    <SafeAreaView style={styles.container}>
+      <View style={styles.missingScreen}><Text style={styles.missingTitle}>KONNEKT</Text><Text style={styles.missingText}>Connecting securely…</Text></View>
+    </SafeAreaView>
+  );
+
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar backgroundColor="#080812" barStyle="light-content" />
@@ -86,10 +96,9 @@ export default function App() {
         {ActiveScreen ? (
           <ActiveScreen
             navigation={navigation}
-            route={{
-              name: currentRoute.name,
-              params: currentRoute.params || {}
-            }}
+            route={{ name: currentRoute.name, params: currentRoute.params || {} }}
+            user={user}
+            session={session}
           />
         ) : (
           <View style={styles.missingScreen}>
@@ -110,7 +119,7 @@ export default function App() {
         )}
       </View>
 
-      {isMainTab && (
+      {isMainTab && session && (
         <View style={styles.tabBar}>
           {tabs.map(tab => {
             const active = currentRoute.name === tab.name;
@@ -216,3 +225,5 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   }
 });
+
+export default function App() { return <AuthProvider><AppShell /></AuthProvider>; }
