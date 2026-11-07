@@ -26,6 +26,19 @@ end; $$;
 drop trigger if exists on_konnekt_auth_user_created on auth.users;
 create trigger on_konnekt_auth_user_created after insert on auth.users for each row execute procedure public.handle_new_konnekt_user();
 
+-- Backfill profile rows for accounts created before this trigger was installed.
+insert into public.profiles (id, username, full_name)
+select
+  u.id,
+  case
+    when coalesce(u.raw_user_meta_data ->> 'username', '') ~ '^[a-zA-Z0-9_.]{3,20}$'
+      then lower(u.raw_user_meta_data ->> 'username')
+    else null
+  end,
+  coalesce(u.raw_user_meta_data ->> 'full_name', u.raw_user_meta_data ->> 'name', '')
+from auth.users u
+on conflict (id) do nothing;
+
 -- Private conversations and messages
 create table if not exists public.conversations (
   id uuid primary key default gen_random_uuid(), title text, is_group boolean not null default false,
@@ -132,6 +145,7 @@ alter table public.live_stream_comments enable row level security;
 -- Profiles
  drop policy if exists "profiles readable by authenticated" on public.profiles;
 create policy "profiles readable by authenticated" on public.profiles for select to authenticated using(true);
+grant select, insert, update on public.profiles to authenticated;
 drop policy if exists "profile owner inserts own row" on public.profiles;
 create policy "profile owner inserts own row" on public.profiles for insert to authenticated with check(auth.uid()=id);
 drop policy if exists "profile owner updates own row" on public.profiles;
