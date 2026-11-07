@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import {
   View,
@@ -6,90 +5,83 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  StatusBar,
-  ScrollView
+  StatusBar
 } from 'react-native';
 
-// Main KONNEKT screens
-import ChatsScreen from './src/screens/ChatsScreen.jsx';
-import WatchScreen from './src/screens/WatchScreen.jsx';
-import StatusScreen from './src/screens/StatusScreen.jsx';
-import ProfileScreen from './src/screens/ProfileScreen.jsx';
-import HashtagScreen from './src/screens/HashtagScreen.jsx';
+/*
+ * One navigation system for the whole KONNEKT web app.
+ * Vite discovers every screen in src/screens, so .js and .jsx files
+ * are both supported without maintaining dozens of fragile imports.
+ */
+const discoveredScreens = import.meta.glob('./src/screens/*.{js,jsx}', {
+  eager: true,
+  import: 'default'
+});
 
-// Secondary screens
-import ChatConversationScreen from './src/screens/ChatConversationScreen';
-import NewChatScreen from './src/screens/NewChatScreen';
-import AccountSettingsScreen from './src/screens/AccountSettingsScreen';
-import LoginScreen from './src/screens/LoginScreen';
+const screenRegistry = Object.fromEntries(
+  Object.entries(discoveredScreens).map(([filePath, component]) => {
+    const fileName = filePath.split('/').pop().replace(/\.(jsx|js)$/, '');
+    const routeName = fileName.replace(/Screen$/, '');
+    return [routeName, component];
+  })
+);
+
+const routeAliases = {
+  Reels: 'Watch',
+  Discover: 'Hashtag',
+  ChatMedia: 'ChatAttachments',
+  CameraScreen: 'Camera',
+  ShareContactScreen: 'ShareContact',
+  ShareLocationScreen: 'ShareLocation'
+};
 
 const tabs = [
-  { name: 'Chats', icon: '💬' },
-  { name: 'Reels', icon: '🎬' },
-  { name: 'Status', icon: '📸' },
-  { name: 'Discover', icon: '🌍' },
-  { name: 'Profile', icon: '👤' }
+  { name: 'Chats', icon: 'ðŸ’¬' },
+  { name: 'Reels', icon: 'ðŸŽ¬' },
+  { name: 'Status', icon: 'â—‰' },
+  { name: 'Discover', icon: 'âŒ•' },
+  { name: 'Profile', icon: 'ðŸ‘¤' }
 ];
 
 export default function App() {
   const [stack, setStack] = useState([
-    { name: 'Chats', params: {} }
+    { name: 'Welcome', params: {} }
   ]);
 
-  const currentRoute = stack[stack.length - 1];
+  const currentRoute = stack[stack.length - 1] || {
+    name: 'Welcome',
+    params: {}
+  };
 
   const navigation = {
     navigate: (name, params = {}) => {
-      setStack(previous => [
-        ...previous,
-        { name, params }
-      ]);
+      setStack(previous => [...previous, { name, params }]);
     },
-
     goBack: () => {
       setStack(previous =>
-        previous.length > 1
-          ? previous.slice(0, -1)
-          : previous
+        previous.length > 1 ? previous.slice(0, -1) : previous
       );
     },
-
     replace: (name, params = {}) => {
       setStack(previous => [
         ...previous.slice(0, -1),
         { name, params }
       ]);
     },
-
-    getParam: (name) => currentRoute.params?.[name]
+    getParam: name => currentRoute.params?.[name]
   };
 
-  const openTab = (name) => {
+  const openTab = name => {
     setStack([{ name, params: {} }]);
   };
 
-  const screens = {
-    Chats: ChatsScreen,
-    Reels: WatchScreen,
-    Watch: WatchScreen,
-    Status: StatusScreen,
-    Discover: HashtagScreen,
-    Hashtag: HashtagScreen,
-    Profile: ProfileScreen,
-    ChatConversation: ChatConversationScreen,
-    NewChat: NewChatScreen,
-    AccountSettings: AccountSettingsScreen,
-    Login: LoginScreen
-  };
-
-  const ActiveScreen = screens[currentRoute.name];
+  const screenKey = routeAliases[currentRoute.name] || currentRoute.name;
+  const ActiveScreen = screenRegistry[screenKey];
+  const isMainTab = tabs.some(tab => tab.name === currentRoute.name);
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar
-        backgroundColor="#080812"
-        barStyle="light-content"
-      />
+      <StatusBar backgroundColor="#080812" barStyle="light-content" />
 
       <View style={styles.screen}>
         {ActiveScreen ? (
@@ -97,7 +89,7 @@ export default function App() {
             navigation={navigation}
             route={{
               name: currentRoute.name,
-              params: currentRoute.params
+              params: currentRoute.params || {}
             }}
           />
         ) : (
@@ -106,41 +98,39 @@ export default function App() {
               {currentRoute.name}
             </Text>
             <Text style={styles.missingText}>
-              This screen still needs to be connected.
+              This section is not connected yet.
             </Text>
             <TouchableOpacity
+              accessibilityRole="button"
               style={styles.backButton}
               onPress={navigation.goBack}
             >
-              <Text style={styles.backText}>Go Back</Text>
+              <Text style={styles.backText}>â† Go back</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
 
-      {tabs.some(tab => tab.name === currentRoute.name) && (
+      {isMainTab && (
         <View style={styles.tabBar}>
           {tabs.map(tab => {
             const active = currentRoute.name === tab.name;
-
             return (
               <TouchableOpacity
                 key={tab.name}
+                accessibilityRole="button"
+                accessibilityLabel={tab.name}
+                accessibilityState={{ selected: active }}
                 style={styles.tab}
                 onPress={() => openTab(tab.name)}
               >
-                <Text style={styles.tabIcon}>
+                <Text style={[styles.tabIcon, active && styles.activeTabIcon]}>
                   {tab.icon}
                 </Text>
-                <Text
-                  style={[
-                    styles.tabLabel,
-                    active && styles.activeTabLabel
-                  ]}
-                >
+                <Text style={[styles.tabLabel, active && styles.activeTabLabel]}>
                   {tab.name}
                 </Text>
-                {active && <View style={styles.activeLine} />}
+                {active ? <View style={styles.activeLine} /> : null}
               </TouchableOpacity>
             );
           })}
@@ -153,13 +143,15 @@ export default function App() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    minHeight: '100vh',
     backgroundColor: '#080812'
   },
   screen: {
-    flex: 1
+    flex: 1,
+    minHeight: 0
   },
   tabBar: {
-    height: 68,
+    minHeight: 68,
     flexDirection: 'row',
     backgroundColor: '#0D1424',
     borderTopWidth: 1,
@@ -172,11 +164,15 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    height: 62
+    minHeight: 62
   },
   tabIcon: {
+    color: '#8A99AD',
     fontSize: 21,
     marginBottom: 3
+  },
+  activeTabIcon: {
+    color: '#168BFF'
   },
   tabLabel: {
     color: '#8A99AD',
@@ -207,7 +203,8 @@ const styles = StyleSheet.create({
   },
   missingText: {
     color: '#B8C4D4',
-    marginTop: 12
+    marginTop: 12,
+    textAlign: 'center'
   },
   backButton: {
     backgroundColor: '#168BFF',
