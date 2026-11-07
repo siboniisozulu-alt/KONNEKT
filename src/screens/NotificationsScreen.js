@@ -4,147 +4,211 @@ import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
+  ScrollView,
 } from 'react-native';
 
 const initialNotifications = [
   {
     id: '1',
-    icon: '💬',
-    title: 'New message',
-    description: 'Sarah sent you a message.',
+    type: 'like',
+    name: 'Thando Music',
+    avatar: '🎵',
+    message: 'liked your video.',
     time: '2 minutes ago',
-    type: 'Messages',
     read: false,
   },
   {
     id: '2',
-    icon: '❤️',
-    title: 'Someone liked your video',
-    description: 'Thabo liked your latest video.',
+    type: 'comment',
+    name: 'Sipho Creates',
+    avatar: '🎬',
+    message: 'commented: Amazing content! 🔥',
     time: '15 minutes ago',
-    type: 'Videos',
     read: false,
   },
   {
     id: '3',
-    icon: '👤',
-    title: 'New follower',
-    description: 'Lerato started following you.',
+    type: 'follow',
+    name: 'Lerato',
+    avatar: '🌸',
+    message: 'started following you.',
     time: '1 hour ago',
-    type: 'Followers',
     read: false,
   },
   {
     id: '4',
-    icon: '📸',
-    title: 'Status reaction',
-    description: 'A friend reacted to your status.',
+    type: 'mention',
+    name: 'Kasi Comedy',
+    avatar: '😂',
+    message: 'mentioned you in a comment.',
     time: '3 hours ago',
-    type: 'Statuses',
     read: true,
   },
   {
     id: '5',
-    icon: '🔴',
-    title: 'Live stream reminder',
-    description: 'A creator you follow is going live.',
+    type: 'live',
+    name: 'Musa ZA',
+    avatar: '🔥',
+    message: 'is live now. Join the stream!',
     time: 'Yesterday',
-    type: 'Live',
-    read: true,
-  },
-  {
-    id: '6',
-    icon: '🛡️',
-    title: 'Security reminder',
-    description: 'Review your account security settings.',
-    time: 'Yesterday',
-    type: 'Account',
     read: true,
   },
 ];
 
 const filters = [
   'All',
-  'Messages',
-  'Videos',
-  'Followers',
-  'Statuses',
+  'Likes',
+  'Comments',
+  'Follows',
+  'Mentions',
   'Live',
-  'Account',
 ];
+
+const typeIcons = {
+  like: '❤️',
+  comment: '💬',
+  follow: '👥',
+  mention: '@',
+  live: '🔴',
+};
 
 export default function NotificationsScreen({ navigation }) {
   const [notifications, setNotifications] = useState(
     initialNotifications
   );
-  const [selectedFilter, setSelectedFilter] = useState('All');
+
+  const [activeFilter, setActiveFilter] = useState('All');
+
+  const getFilterType = (filter) => {
+    const types = {
+      Likes: 'like',
+      Comments: 'comment',
+      Follows: 'follow',
+      Mentions: 'mention',
+      Live: 'live',
+    };
+
+    return types[filter];
+  };
 
   const filteredNotifications = notifications.filter((item) => {
-    return (
-      selectedFilter === 'All' ||
-      item.type === selectedFilter
-    );
+    if (activeFilter === 'All') return true;
+
+    return item.type === getFilterType(activeFilter);
   });
 
   const unreadCount = notifications.filter(
     (item) => !item.read
   ).length;
 
-  const markAsRead = (id) => {
+  const markAllRead = () => {
+    setNotifications((previous) =>
+      previous.map((item) => ({
+        ...item,
+        read: true,
+      }))
+    );
+  };
+
+  const markRead = (id) => {
     setNotifications((previous) =>
       previous.map((item) =>
-        item.id === id ? { ...item, read: true } : item
+        item.id === id
+          ? { ...item, read: true }
+          : item
       )
     );
   };
 
-  const markAllAsRead = () => {
-    setNotifications((previous) =>
-      previous.map((item) => ({ ...item, read: true }))
-    );
-  };
-
-  const clearNotifications = () => {
-    setNotifications([]);
-  };
-
   const openNotification = (item) => {
-    markAsRead(item.id);
+    markRead(item.id);
 
-    if (item.type === 'Messages') {
-      navigation.navigate('Chats');
-    } else if (item.type === 'Videos') {
-      navigation.navigate('Watch');
-    } else if (item.type === 'Followers') {
-      navigation.navigate('Profile');
-    } else if (item.type === 'Statuses') {
-      navigation.navigate('Status');
-    } else if (item.type === 'Live') {
-      navigation.navigate('Watch');
-    } else {
-      navigation.navigate('AccountSettings');
+    switch (item.type) {
+      case 'follow':
+        navigation.navigate('Followers');
+        break;
+
+      case 'comment':
+        navigation.navigate('Comments');
+        break;
+
+      case 'like':
+        navigation.navigate('Profile');
+        break;
+
+      case 'live':
+        navigation.navigate('Watch');
+        break;
+
+      case 'mention':
+        navigation.navigate('Comments');
+        break;
+
+      default:
+        break;
     }
   };
+
+  const renderNotification = ({ item }) => (
+    <TouchableOpacity
+      style={[
+        styles.notificationCard,
+        !item.read && styles.unreadCard,
+      ]}
+      onPress={() => openNotification(item)}
+    >
+      <View style={styles.avatarContainer}>
+        <Text style={styles.avatar}>{item.avatar}</Text>
+
+        <View style={styles.typeIcon}>
+          <Text style={styles.typeIconText}>
+            {typeIcons[item.type]}
+          </Text>
+        </View>
+      </View>
+
+      <View style={styles.notificationContent}>
+        <Text style={styles.message}>
+          <Text style={styles.name}>{item.name} </Text>
+          {item.message}
+        </Text>
+
+        <Text style={styles.time}>{item.time}</Text>
+      </View>
+
+      {!item.read && <View style={styles.unreadDot} />}
+    </TouchableOpacity>
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Notifications</Text>
-          <Text style={styles.headerSubtitle}>
+        <Text style={styles.headerTitle}>Activity</Text>
+
+        <TouchableOpacity
+          onPress={() =>
+            navigation.navigate('NotificationSettings')
+          }
+        >
+          <Text style={styles.settingsIcon}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
+
+      <View style={styles.summary}>
+        <View>
+          <Text style={styles.summaryTitle}>
+            Your notifications
+          </Text>
+
+          <Text style={styles.summarySubtitle}>
             {unreadCount} unread notifications
           </Text>
         </View>
 
-        <TouchableOpacity
-          onPress={markAllAsRead}
-          style={styles.headerButton}
-        >
-          <Text style={styles.headerButtonText}>
-            Mark all read
-          </Text>
+        <TouchableOpacity onPress={markAllRead}>
+          <Text style={styles.markRead}>Mark all read</Text>
         </TouchableOpacity>
       </View>
 
@@ -154,91 +218,57 @@ export default function NotificationsScreen({ navigation }) {
         style={styles.filterScroll}
         contentContainerStyle={styles.filterContainer}
       >
-        {filters.map((filter) => (
-          <TouchableOpacity
-            key={filter}
-            style={[
-              styles.filterButton,
-              selectedFilter === filter &&
-                styles.activeFilter,
-            ]}
-            onPress={() => setSelectedFilter(filter)}
-          >
-            <Text
-              style={[
-                styles.filterText,
-                selectedFilter === filter &&
-                  styles.activeFilterText,
-              ]}
-            >
-              {filter}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+        {filters.map((filter) => {
+          const selected = activeFilter === filter;
 
-      <ScrollView contentContainerStyle={styles.content}>
-        {filteredNotifications.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyIcon}>🔔</Text>
-            <Text style={styles.emptyTitle}>
-              No notifications
-            </Text>
-            <Text style={styles.emptyDescription}>
-              New activity will appear here.
-            </Text>
-          </View>
-        ) : (
-          filteredNotifications.map((item) => (
+          return (
             <TouchableOpacity
-              key={item.id}
+              key={filter}
+              onPress={() => setActiveFilter(filter)}
               style={[
-                styles.notificationCard,
-                !item.read && styles.unreadCard,
+                styles.filterButton,
+                selected && styles.filterSelected,
               ]}
-              onPress={() => openNotification(item)}
             >
-              <View style={styles.iconCircle}>
-                <Text style={styles.notificationIcon}>
-                  {item.icon}
-                </Text>
-              </View>
-
-              <View style={styles.notificationInfo}>
-                <Text style={styles.notificationTitle}>
-                  {item.title}
-                </Text>
-
-                <Text style={styles.notificationDescription}>
-                  {item.description}
-                </Text>
-
-                <Text style={styles.time}>
-                  {item.time}
-                </Text>
-              </View>
-
-              {!item.read && <View style={styles.unreadDot} />}
+              <Text
+                style={[
+                  styles.filterText,
+                  selected && styles.filterTextSelected,
+                ]}
+              >
+                {filter}
+              </Text>
             </TouchableOpacity>
-          ))
-        )}
-
-        {notifications.length > 0 && (
-          <TouchableOpacity
-            style={styles.clearButton}
-            onPress={clearNotifications}
-          >
-            <Text style={styles.clearButtonText}>
-              Clear all notifications
-            </Text>
-          </TouchableOpacity>
-        )}
-
-        <Text style={styles.demoNote}>
-          Demonstration notifications only. Real-time notifications
-          require backend events and push notification services.
-        </Text>
+          );
+        })}
       </ScrollView>
+
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>
+          Recent activity
+        </Text>
+      </View>
+
+      {filteredNotifications.length === 0 ? (
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyIcon}>🔔</Text>
+
+          <Text style={styles.emptyTitle}>
+            Nothing here yet
+          </Text>
+
+          <Text style={styles.emptyText}>
+            New activity will appear here.
+          </Text>
+        </View>
+      ) : (
+        <FlatList
+          data={filteredNotifications}
+          keyExtractor={(item) => item.id}
+          renderItem={renderNotification}
+          contentContainerStyle={styles.list}
+        />
+      )}
     </View>
   );
 }
@@ -253,30 +283,40 @@ const styles = StyleSheet.create({
     padding: 17,
     flexDirection: 'row',
     alignItems: 'center',
-  },
-  headerInfo: {
-    flex: 1,
+    justifyContent: 'space-between',
   },
   headerTitle: {
     color: '#FFFFFF',
     fontSize: 19,
     fontWeight: 'bold',
   },
-  headerSubtitle: {
-    color: '#D5EAE7',
+  settingsIcon: {
+    fontSize: 21,
+  },
+  summary: {
+    padding: 17,
+    backgroundColor: '#FFFFFF',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  summaryTitle: {
+    color: '#17202A',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+  summarySubtitle: {
+    color: '#98A2B3',
     fontSize: 10,
-    marginTop: 4,
+    marginTop: 5,
   },
-  headerButton: {
-    padding: 8,
-  },
-  headerButtonText: {
-    color: '#FFFFFF',
+  markRead: {
+    color: '#075E54',
     fontSize: 10,
     fontWeight: 'bold',
   },
   filterScroll: {
-    maxHeight: 57,
+    maxHeight: 55,
     backgroundColor: '#FFFFFF',
   },
   filterContainer: {
@@ -286,63 +326,88 @@ const styles = StyleSheet.create({
   filterButton: {
     paddingHorizontal: 13,
     paddingVertical: 9,
-    borderRadius: 20,
     backgroundColor: '#F2F4F7',
-    marginRight: 7,
+    borderRadius: 20,
+    marginRight: 8,
   },
-  activeFilter: {
+  filterSelected: {
     backgroundColor: '#075E54',
   },
   filterText: {
     color: '#667085',
     fontSize: 10,
-    fontWeight: 'bold',
+    fontWeight: '500',
   },
-  activeFilterText: {
+  filterTextSelected: {
     color: '#FFFFFF',
   },
-  content: {
-    padding: 14,
-    paddingBottom: 35,
+  sectionHeader: {
+    padding: 16,
   },
-  notificationCard: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#E8ECEF',
-  },
-  unreadCard: {
-    backgroundColor: '#EDF7F5',
-    borderColor: '#C9E5DE',
-  },
-  iconCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    backgroundColor: '#EAF2F1',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: 12,
-  },
-  notificationIcon: {
-    fontSize: 21,
-  },
-  notificationInfo: {
-    flex: 1,
-  },
-  notificationTitle: {
+  sectionTitle: {
     color: '#17202A',
     fontSize: 12,
     fontWeight: 'bold',
   },
-  notificationDescription: {
-    color: '#667085',
+  list: {
+    paddingHorizontal: 13,
+    paddingBottom: 25,
+  },
+  notificationCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 12,
+    padding: 13,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 9,
+    borderWidth: 1,
+    borderColor: '#EAECF0',
+  },
+  unreadCard: {
+    backgroundColor: '#F0F8F5',
+    borderColor: '#C8E5DA',
+  },
+  avatarContainer: {
+    position: 'relative',
+    marginRight: 12,
+  },
+  avatar: {
+    width: 45,
+    height: 45,
+    borderRadius: 23,
+    backgroundColor: '#E8F4F1',
+    textAlign: 'center',
+    textAlignVertical: 'center',
+    fontSize: 22,
+    overflow: 'hidden',
+  },
+  typeIcon: {
+    position: 'absolute',
+    right: -4,
+    bottom: -4,
+    backgroundColor: '#FFFFFF',
+    width: 21,
+    height: 21,
+    borderRadius: 11,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: '#EAECF0',
+  },
+  typeIconText: {
     fontSize: 10,
-    marginTop: 5,
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  message: {
+    color: '#475467',
+    fontSize: 11,
+    lineHeight: 17,
+  },
+  name: {
+    color: '#17202A',
+    fontWeight: 'bold',
   },
   time: {
     color: '#98A2B3',
@@ -350,46 +415,30 @@ const styles = StyleSheet.create({
     marginTop: 6,
   },
   unreadDot: {
-    width: 9,
-    height: 9,
-    borderRadius: 5,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
     backgroundColor: '#075E54',
     marginLeft: 8,
   },
   emptyState: {
+    flex: 1,
     alignItems: 'center',
-    padding: 40,
-    marginTop: 35,
+    justifyContent: 'center',
+    padding: 25,
   },
   emptyIcon: {
-    fontSize: 45,
+    fontSize: 43,
+    marginBottom: 12,
   },
   emptyTitle: {
     color: '#17202A',
-    fontSize: 15,
-    fontWeight: 'bold',
-    marginTop: 12,
-  },
-  emptyDescription: {
-    color: '#98A2B3',
-    fontSize: 11,
-    marginTop: 6,
-  },
-  clearButton: {
-    alignItems: 'center',
-    padding: 15,
-    marginTop: 10,
-  },
-  clearButtonText: {
-    color: '#D92D20',
-    fontSize: 11,
+    fontSize: 14,
     fontWeight: 'bold',
   },
-  demoNote: {
+  emptyText: {
     color: '#98A2B3',
-    fontSize: 10,
-    lineHeight: 16,
-    textAlign: 'center',
-    marginTop: 15,
+    fontSize: 11,
+    marginTop: 7,
   },
 });
