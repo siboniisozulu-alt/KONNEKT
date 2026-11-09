@@ -1,0 +1,26 @@
+KONNEKT COMMUNICATIONS UPGRADE
+
+Added:
+- Supabase migration: call_sessions and call_signals for authenticated one-to-one call signalling.
+- message_receipts for delivery/read receipts.
+- conversation_members role and last_read_at fields for group management/read tracking.
+- user_device_keys table for public encryption key records (private keys are never stored here).
+- calls.js service for creating/updating calls and realtime signalling.
+- OneSignal Capacitor SDK dependency and signed-in user registration hook.
+- Supabase Edge Function sample for secure OneSignal push delivery.
+- setup guide with configuration, deployment, and safety limitations.
+
+Preserved:
+- Existing Supabase URL and publishable key.
+- Existing users, profiles, messages, posts, follows, statuses, and conversations.
+- Existing app navigation, web deployment workflow, Capacitor config and Android APK workflow.
+
+Important: This package is an integration foundation. It does not yet make the existing demo call screen a finished WebRTC calling client, nor does it enable end-to-end encryption. Follow COMMUNICATIONS-UPGRADE-GUIDE.md before claiming those features are live.
+
+Revised implementation:
+- Replaced demo call timer with WebRTC media capture, peer connection, signalling, mute/camera controls, call end handling and in-app incoming-call prompt.
+- Added short-lived coturn REST credentials via a Supabase Edge Function; no long-lived TURN secret is exposed as a Vite variable.
+- Added message delivery/read receipt writes and display for direct and group conversations.
+- Added best-effort push delivery invocation after message persistence.
+- Documented that E2EE is still not enabled and must not be represented as active.
+Remaining external setup: deploy migrations/functions, configure OneSignal/Firebase and coturn secrets, then test on physical devices and different networks.

@@ -1,0 +1,12 @@
+{
+  "appId": "com.konnekt.app",
+  "appName": "KONNEKT",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "automatic"
+  }
+}

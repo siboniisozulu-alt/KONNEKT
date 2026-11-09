@@ -1,12 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { AuthProvider, useAuth } from './src/AuthContext';
+import { supabase } from './src/lib_supabase';
 import {
   View,
   Text,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  StatusBar
+  StatusBar,
+  Modal
 } from 'react-native';
 
 /*
@@ -46,10 +48,23 @@ const tabs = [
 function AppShell() {
   const { session, user, loading, recovery } = useAuth();
   const [stack, setStack] = useState([{ name: 'Welcome', params: {} }]);
+  const [incomingCall, setIncomingCall] = useState(null);
 
   useEffect(() => {
     if (!loading) setStack([{ name: recovery ? 'PasswordReset' : (session ? 'Chats' : 'Welcome'), params: {} }]);
   }, [loading, session?.user?.id, recovery]);
+
+  useEffect(() => {
+    if (!user?.id) { setIncomingCall(null); return; }
+    const channel = supabase.channel(`incoming-calls-${user.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'call_sessions', filter: `callee_id=eq.${user.id}` }, async payload => {
+        if (payload.new.status !== 'ringing') return;
+        const { data: profile } = await supabase.from('profiles').select('username,full_name').eq('id', payload.new.caller_id).maybeSingle();
+        setIncomingCall({ ...payload.new, contact: { name: profile?.full_name || profile?.username || 'KONNEKT member', username: profile?.username ? `@${profile.username}` : '' } });
+      })
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
 
   const currentRoute = stack[stack.length - 1] || {
     name: 'Welcome',
@@ -144,6 +159,25 @@ function AppShell() {
           })}
         </View>
       )}
+      <Modal visible={!!incomingCall} transparent animationType="fade" onRequestClose={() => setIncomingCall(null)}>
+        <View style={styles.callOverlay}>
+          <View style={styles.callCard}>
+            <Text style={styles.callTitle}>Incoming {incomingCall?.call_type || 'voice'} call</Text>
+            <Text style={styles.callName}>{incomingCall?.contact?.name || 'KONNEKT member'}</Text>
+            <Text style={styles.callHint}>KONNEKT is calling you</Text>
+            <View style={styles.callActions}>
+              <TouchableOpacity style={[styles.callAction, styles.decline]} onPress={async () => {
+                const call = incomingCall; setIncomingCall(null);
+                if (call?.id) await supabase.from('call_sessions').update({ status: 'rejected', ended_at: new Date().toISOString() }).eq('id', call.id);
+              }}><Text style={styles.callActionText}>Decline</Text></TouchableOpacity>
+              <TouchableOpacity style={[styles.callAction, styles.answer]} onPress={() => {
+                const call = incomingCall; setIncomingCall(null);
+                if (call) navigation.navigate('Call', { incoming: true, callId: call.id, callType: call.call_type, contact: call.contact });
+              }}><Text style={styles.callActionText}>Answer</Text></TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -223,7 +257,16 @@ const styles = StyleSheet.create({
   backText: {
     color: '#FFFFFF',
     fontWeight: 'bold'
-  }
+  },
+  callOverlay:{flex:1,backgroundColor:'rgba(0,0,0,0.72)',justifyContent:'center',alignItems:'center',padding:24},
+  callCard:{width:'100%',maxWidth:360,backgroundColor:'#14243A',borderRadius:20,padding:24,alignItems:'center'},
+  callTitle:{color:'#8FCBFF',fontSize:13,fontWeight:'bold',textTransform:'uppercase'},
+  callName:{color:'#FFF',fontSize:24,fontWeight:'bold',marginTop:15},
+  callHint:{color:'#A9BBD0',marginTop:7},
+  callActions:{flexDirection:'row',gap:14,marginTop:26},
+  callAction:{paddingHorizontal:24,paddingVertical:13,borderRadius:24,minWidth:110,alignItems:'center'},
+  decline:{backgroundColor:'#D94352'},answer:{backgroundColor:'#168BFF'},
+  callActionText:{color:'#FFF',fontWeight:'bold'}
 });
 
 export default function App() { return <AuthProvider><AppShell /></AuthProvider>; }
