@@ -17,8 +17,8 @@ export default function MediaPickerScreen({ navigation, route }) {
 
   const [selectedItems, setSelectedItems] = useState([]);
 
-  // Demo gallery items. Real device media will be loaded later.
-  const demoMedia = [];
+  // Media is populated only by a connected device media picker.
+  const availableMedia = [];
 
   const toggleSelection = (id) => {
     setSelectedItems((previous) =>
@@ -38,8 +38,8 @@ export default function MediaPickerScreen({ navigation, route }) {
     }
 
     Alert.alert(
-      'Demo selection',
-      `${selectedItems.length} item(s) selected for ${contact.name}. Real media uploads will be connected later.`,
+      'Media sharing unavailable',
+      'Device media access and uploads are not connected in this build.',
       [
         {
           text: 'OK',
@@ -76,7 +76,7 @@ export default function MediaPickerScreen({ navigation, route }) {
       </View>
 
       <ScrollView contentContainerStyle={styles.gallery}>
-        {demoMedia.map((item) => {
+        {availableMedia.map((item) => {
           const selected = selectedItems.includes(item.id);
 
           return (
@@ -102,6 +102,7 @@ export default function MediaPickerScreen({ navigation, route }) {
             </TouchableOpacity>
           );
         })}
+        {availableMedia.length === 0 && <Text style={styles.emptyText}>No media is available. Device gallery access is not connected.</Text>}
       </ScrollView>
 
       <View style={styles.bottomBar}>
@@ -175,6 +176,7 @@ const styles = StyleSheet.create({
     color: '#075E54',
     fontSize: 18,
   },
+  emptyText: { color: '#8293A8', textAlign: 'center', padding: 24 },
   gallery: {
     padding: 5,
     flexDirection: 'row',

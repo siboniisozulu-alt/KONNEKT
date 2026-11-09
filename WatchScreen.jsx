@@ -3,11 +3,13 @@ import { View, Text, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, 
 import { useAuth } from '../AuthContext';
 import { supabase } from '../lib_supabase';
 import { chooseMedia, uploadMedia } from '../services/media';
+import { rankKonnektFeed } from '../services/konnektEngine.jsx';
 
 const MAX_VIDEO_BYTES = 45 * 1024 * 1024;
 const REEL_PAGE_HEIGHT = Math.max(420, Dimensions.get('window').height - 245);
 
-export default function WatchScreen({ navigation }) {
+export default function WatchScreen({ navigation, route }) {
+  const selectedHashtag = String(route?.params?.hashtag || '').replace(/^#/, '').toLowerCase();
   const { user } = useAuth();
   const [posts, setPosts] = useState([]);
   const [liked, setLiked] = useState(new Set());
@@ -21,12 +23,20 @@ export default function WatchScreen({ navigation }) {
   const [caption, setCaption] = useState('');
   const [notice, setNotice] = useState('');
   const [feedHeight, setFeedHeight] = useState(0);
+  const viewedIds = React.useRef(new Set());
   const pageHeight = feedHeight || REEL_PAGE_HEIGHT;
 
   const load = useCallback(async () => {
     if (!user?.id) { setBusy(false); return; }
     try {
-      const { data, error } = await supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(60);
+      let hashtagPostIds = null;
+      if (selectedHashtag) {
+        const { data: hashtagRows, error: hashtagError } = await supabase.from('post_hashtags').select('post_id').eq('hashtag', selectedHashtag);
+        if (hashtagError) throw hashtagError;
+        hashtagPostIds = (hashtagRows || []).map(row => row.post_id);
+      }
+      const postQuery = supabase.from('posts').select('*').order('created_at', { ascending: false }).limit(60);
+      const { data, error } = hashtagPostIds ? (hashtagPostIds.length ? await postQuery.in('id', hashtagPostIds) : { data: [], error: null }) : await postQuery;
       if (error) throw error;
       const rows = data || [];
       const postIds = rows.map(p => p.id);
@@ -56,18 +66,33 @@ export default function WatchScreen({ navigation }) {
       commentRows.forEach(c => { (grouped[c.post_id] ||= []).push({ ...c, profile: commentProfileMap[c.user_id] }); });
       const counts = {};
       (allLikesResult.data || []).forEach(x => { counts[x.post_id] = (counts[x.post_id] || 0) + 1; });
+      const likedIds = new Set((myLikesResult.data || []).map(x => x.post_id));
+      const followedIds = new Set((followsResult.data || []).map(x => x.followed_id));
+      const interactedCreatorIds = new Set(rows.filter(p => likedIds.has(p.id)).map(p => p.user_id));
+      const enrichedRows = rows.map(p => ({
+        ...p,
+        profile: profileMap[p.user_id],
+        like_count: counts[p.id] || 0,
+        comment_count: (grouped[p.id] || []).length
+      }));
+      const rankedRows = rankKonnektFeed(enrichedRows, {
+        followedIds,
+        interactedCreatorIds,
+        seenPostIds: new Set(),
+        mutedCreatorIds: new Set()
+      }, { limit: 60 });
       setComments(grouped);
       setLikeCounts(counts);
-      setLiked(new Set((myLikesResult.data || []).map(x => x.post_id)));
-      setFollowing(new Set((followsResult.data || []).map(x => x.followed_id)));
-      setPosts(rows.map(p => ({ ...p, profile: profileMap[p.user_id] })));
+      setLiked(likedIds);
+      setFollowing(followedIds);
+      setPosts(rankedRows);
       setNotice('');
     } catch (e) {
       setNotice(e?.message || 'Could not load Reels. Please refresh and try again.');
     } finally {
       setBusy(false);
     }
-  }, [user?.id]);
+  }, [user?.id, selectedHashtag]);
 
   useEffect(() => {
     load();
@@ -79,6 +104,15 @@ export default function WatchScreen({ navigation }) {
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load, user?.id]);
+
+  const recordVisibleView = async offset => {
+    const index = Math.max(0, Math.min(posts.length - 1, Math.round(offset / pageHeight)));
+    const post = posts[index];
+    if (!post?.id || post.user_id === user?.id || viewedIds.current.has(post.id)) return;
+    viewedIds.current.add(post.id);
+    const { error } = await supabase.from('post_views').upsert({ post_id: post.id, user_id: user.id }, { onConflict: 'post_id,user_id', ignoreDuplicates: true });
+    if (error) { viewedIds.current.delete(post.id); setNotice(`View tracking unavailable: ${error.message}`); }
+  };
 
   const publish = async () => {
     try {
@@ -214,7 +248,7 @@ export default function WatchScreen({ navigation }) {
   return (
     <View style={s.container}>
       <View style={s.header}>
-        <View><Text style={s.title}>Reels</Text><Text style={s.sub}>Discover videos from the KONNEKT community</Text></View>
+        <View><Text style={s.title}>{selectedHashtag ? `#${selectedHashtag}` : 'Reels'}</Text><Text style={s.sub}>{selectedHashtag ? 'Posts using this hashtag' : 'Discover videos from the KONNEKT community'}</Text></View>
         <TouchableOpacity onPress={publish} style={[s.upload, uploading && s.uploadDisabled]} disabled={uploading}>
           {uploading ? <ActivityIndicator color="#FFF" /> : <Text style={s.uploadText}>＋ Create Reel</Text>}
         </TouchableOpacity>
@@ -235,6 +269,7 @@ export default function WatchScreen({ navigation }) {
             getItemLayout={(_, index) => ({ length: pageHeight, offset: pageHeight * index, index })}
             onRefresh={load}
             refreshing={busy}
+            onMomentumScrollEnd={event => recordVisibleView(event.nativeEvent.contentOffset.y)}
             contentContainerStyle={posts.length ? s.feedContent : s.emptyContent}
             ListEmptyComponent={empty}
             showsVerticalScrollIndicator={false}

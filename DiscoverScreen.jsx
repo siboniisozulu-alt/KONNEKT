@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, Activity
 import { useAuth } from '../AuthContext';
 import { supabase } from '../lib_supabase';
 import { createDirectConversation } from '../services/social';
+import { rankKonnektPeople } from '../services/konnektEngine.jsx';
 
 const columns = 'id,username,full_name,avatar_url,bio';
 export default function DiscoverScreen({ navigation }) {
@@ -13,19 +14,31 @@ export default function DiscoverScreen({ navigation }) {
   const [busy, setBusy] = useState(true);
   const [actionId, setActionId] = useState('');
   const [notice, setNotice] = useState('');
+  const [onlineIds, setOnlineIds] = useState(new Set());
+  const [recommended, setRecommended] = useState([]);
 
   const load = useCallback(async () => {
     if (!user?.id) { setBusy(false); return; }
     setBusy(true); setNotice('');
     try {
-      const [profilesResult, followsResult] = await Promise.all([
+      const [profilesResult, followsResult, followedByResult, postsResult, presenceResult] = await Promise.all([
         supabase.from('profiles').select(columns).neq('id', user.id).order('full_name', { ascending: true }).limit(200),
-        supabase.from('follows').select('followed_id').eq('follower_id', user.id)
+        supabase.from('follows').select('followed_id').eq('follower_id', user.id),
+        supabase.from('follows').select('follower_id').eq('followed_id', user.id),
+        supabase.from('posts').select('user_id').order('created_at', { ascending: false }).limit(500),
+        supabase.from('user_presence').select('user_id,is_online').eq('is_online', true)
       ]);
-      if (profilesResult.error) throw profilesResult.error;
-      if (followsResult.error) throw followsResult.error;
-      setPeople(profilesResult.data || []);
-      setFollowing(new Set((followsResult.data || []).map(row => row.followed_id)));
+      for (const result of [profilesResult, followsResult, followedByResult, postsResult]) if (result.error) throw result.error;
+      const profileRows = profilesResult.data || [];
+      const followedIds = new Set((followsResult.data || []).map(row => row.followed_id));
+      const followedByIds = new Set((followedByResult.data || []).map(row => row.follower_id));
+      const online = new Set((presenceResult.data || []).map(row => row.user_id));
+      const postCounts = {};
+      (postsResult.data || []).forEach(row => { postCounts[row.user_id] = (postCounts[row.user_id] || 0) + 1; });
+      setPeople(profileRows);
+      setFollowing(followedIds);
+      setOnlineIds(online);
+      setRecommended(rankKonnektPeople(profileRows, { followedIds, followedByIds, postCounts, onlineIds: online }));
     } catch (error) { setNotice(`Could not load Discover: ${error.message || 'Please try again.'}`); }
     finally { setBusy(false); }
   }, [user?.id]);
@@ -35,15 +48,17 @@ export default function DiscoverScreen({ navigation }) {
     const channel = supabase.channel(`discover-${user?.id || 'guest'}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, load)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'follows' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'user_presence' }, load)
       .subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [load, user?.id]);
 
   const filtered = useMemo(() => {
     const q = query.trim().replace(/^@/, '').toLowerCase();
-    if (!q) return people;
-    return people.filter(p => `${p.username || ''} ${p.full_name || ''} ${p.bio || ''}`.toLowerCase().includes(q));
-  }, [people, query]);
+    const source = q ? people : recommended;
+    if (!q) return source;
+    return source.filter(p => `${p.username || ''} ${p.full_name || ''} ${p.bio || ''}`.toLowerCase().includes(q));
+  }, [people, recommended, query]);
 
   const toggleFollow = async person => {
     if (!user?.id || !person?.id || actionId) return;
@@ -79,7 +94,7 @@ export default function DiscoverScreen({ navigation }) {
     return <View style={s.person}>
       <TouchableOpacity style={s.identity} onPress={() => openProfile(item)}>
         {item.avatar_url ? <Image source={{ uri: item.avatar_url }} style={s.avatarImage}/> : <View style={s.avatar}><Text style={s.avatarText}>{(item.full_name || item.username || 'K').slice(0,1).toUpperCase()}</Text></View>}
-        <View style={{ flex: 1, minWidth: 0 }}><Text style={s.name} numberOfLines={1}>{item.full_name || 'KONNEKT member'}</Text><Text style={s.username}>{item.username ? `@${item.username}` : 'Username not set'}</Text>{!!item.bio && <Text style={s.bio} numberOfLines={1}>{item.bio}</Text>}</View>
+        <View style={{ flex: 1, minWidth: 0 }}><Text style={s.name} numberOfLines={1}>{item.full_name || 'KONNEKT member'}</Text><Text style={s.username}>{item.username ? `@${item.username}` : 'Username not set'}{onlineIds.has(item.id) ? '  • Online' : ''}</Text>{!!item.bio && <Text style={s.bio} numberOfLines={1}>{item.bio}</Text>}</View>
       </TouchableOpacity>
       <View style={s.actions}>
         <TouchableOpacity style={[s.follow, isFollowing && s.following]} disabled={!!actionId} onPress={() => toggleFollow(item)}><Text style={s.followText}>{actionId === item.id ? '…' : isFollowing ? 'Following' : '+ Follow'}</Text></TouchableOpacity>
@@ -91,7 +106,7 @@ export default function DiscoverScreen({ navigation }) {
   return <View style={s.container}>
     <View style={s.header}><View><Text style={s.title}>Discover</Text><Text style={s.subtitle}>Find people and creators on KONNEKT</Text></View><TouchableOpacity onPress={load} style={s.refresh}><Text style={s.refreshText}>↻ Refresh</Text></TouchableOpacity></View>
     <TextInput style={s.search} value={query} onChangeText={setQuery} placeholder="Search people by name or @username" placeholderTextColor="#8293A8" autoCapitalize="none" returnKeyType="search"/>
-    <Text style={s.section}>{query.trim() ? `${filtered.length} matching accounts` : 'KONNEKT community'}</Text>
+    <Text style={s.section}>{query.trim() ? `${filtered.length} matching accounts` : 'Suggested people for you'}</Text>
     {busy ? <ActivityIndicator color="#168BFF" style={{ marginTop: 35 }}/> : <FlatList data={filtered} keyExtractor={p => p.id} renderItem={renderPerson} onRefresh={load} refreshing={busy} keyboardShouldPersistTaps="handled" ListEmptyComponent={<Text style={s.empty}>{query.trim() ? 'No accounts match your search.' : 'No other accounts are available yet. Ask another member to sign in and save their profile.'}</Text>}/>}
     {!!notice && <Text style={s.notice}>{notice}</Text>}
   </View>;

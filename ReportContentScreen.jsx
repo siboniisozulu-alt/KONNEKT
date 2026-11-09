@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { useAuth } from '../AuthContext';
+import { submitKonnektReport } from '../services/safety';
 import {
   View,
   Text,
@@ -23,6 +25,8 @@ const reportReasons = [
 ];
 
 export default function ReportContentScreen({ navigation, route }) {
+  const { user } = useAuth();
+  const [sending, setSending] = useState(false);
   const [selectedReason, setSelectedReason] = useState('');
   const [details, setDetails] = useState('');
 
@@ -30,33 +34,16 @@ export default function ReportContentScreen({ navigation, route }) {
   const contentId = route?.params?.contentId || null;
   const creatorName = route?.params?.creatorName || 'Unknown creator';
 
-  const submitReport = () => {
-    if (!selectedReason) {
-      Alert.alert(
-        'Select a reason',
-        'Please choose why you are reporting this content.'
-      );
-      return;
-    }
-
-    if (selectedReason === 'Other' && !details.trim()) {
-      Alert.alert(
-        'More information needed',
-        'Please explain the reason for your report.'
-      );
-      return;
-    }
-
-    Alert.alert(
-      'Report demonstration',
-      'Your report has been checked locally but has not been submitted. A secure reporting backend and moderation team must be connected before reports can be reviewed.',
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+  const submitReport = async () => {
+    if (!selectedReason) { Alert.alert('Select a reason', 'Please choose why you are reporting this content.'); return; }
+    if (selectedReason === 'Other' && !details.trim()) { Alert.alert('More information needed', 'Please explain the reason for your report.'); return; }
+    setSending(true);
+    try {
+      const type = ['post','comment','message'].includes(String(contentType).toLowerCase()) ? String(contentType).toLowerCase() : 'other';
+      await submitKonnektReport({ reportedUserId: route?.params?.reportedUserId || null, contentId, contentType: type, reason: selectedReason, details });
+      Alert.alert('Report submitted', 'Thank you. Your report has been securely submitted for moderator review.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    } catch (error) { Alert.alert('Could not submit report', error.message || 'Please try again.'); }
+    finally { setSending(false); }
   };
 
   return (

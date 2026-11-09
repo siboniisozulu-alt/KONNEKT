@@ -50,9 +50,9 @@ export default function HomeScreen({ navigation }) {
               } else if (action.title === 'Watch') {
                 navigation.navigate('Watch');
               } else if (action.title === 'Go Live') {
-                navigation.navigate('Watch');
-              } else {
-                AlertPlaceholder();
+                navigation.navigate('LiveStreamSetup');
+              } else if (action.title === 'Status') {
+                navigation.navigate('CreateStatus');
               }
             }}
           >
@@ -73,11 +73,6 @@ export default function HomeScreen({ navigation }) {
       </View>
     </ScrollView>
   );
-}
-
-function AlertPlaceholder() {
-  // Status creation will be connected in a later file.
-  return null;
 }
 
 const styles = StyleSheet.create({

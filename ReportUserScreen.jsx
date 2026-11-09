@@ -1,5 +1,7 @@
 
 import React, { useState } from 'react';
+import { useAuth } from '../AuthContext';
+import { submitKonnektReport } from '../services/safety';
 import {
   View,
   Text,
@@ -22,6 +24,8 @@ const reportReasons = [
 ];
 
 export default function ReportUserScreen({ navigation, route }) {
+  const { user } = useAuth();
+  const [sending, setSending] = useState(false);
   const reportedUser = route?.params?.contact || {
     name: 'KONNEKT User',
   };
@@ -30,25 +34,16 @@ export default function ReportUserScreen({ navigation, route }) {
   const [description, setDescription] = useState('');
   const [includeMessages, setIncludeMessages] = useState(false);
 
-  const submitReport = () => {
-    if (!selectedReason) {
-      Alert.alert(
-        'Choose a reason',
-        'Please select why you are reporting this account.'
-      );
-      return;
-    }
-
-    Alert.alert(
-      'Report ready',
-      `Account: ${reportedUser.name}\nReason: ${selectedReason}\n\nYour report has not been sent. Reporting is not connected yet.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+  const submitReport = async () => {
+    if (!selectedReason) { Alert.alert('Choose a reason', 'Please select why you are reporting this account.'); return; }
+    if (!reportedUser?.id) { Alert.alert('Account unavailable', 'This report is missing the account ID. Open the profile again and retry.'); return; }
+    if (reportedUser.id === user?.id) { Alert.alert('Not allowed', 'You cannot report your own account.'); return; }
+    setSending(true);
+    try {
+      await submitKonnektReport({ reportedUserId: reportedUser.id, contentType: 'user', reason: selectedReason, details: description });
+      Alert.alert('Report submitted', 'Thank you. Your report has been securely submitted for moderator review.', [{ text: 'OK', onPress: () => navigation.goBack() }]);
+    } catch (error) { Alert.alert('Could not submit report', error.message || 'Please try again.'); }
+    finally { setSending(false); }
   };
 
   return (
@@ -172,7 +167,7 @@ export default function ReportUserScreen({ navigation, route }) {
           style={styles.submitButton}
           onPress={submitReport}
         >
-          <Text style={styles.submitButtonText}>Submit report</Text>
+          <Text style={styles.submitButtonText}>{sending ? 'Submitting…' : 'Submit report'}</Text>
         </TouchableOpacity>
 
         <TouchableOpacity

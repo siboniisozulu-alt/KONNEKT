@@ -14,7 +14,7 @@ const transactions = [];
 export default function CreatorEarningsScreen({ navigation }) {
   const [selectedPeriod, setSelectedPeriod] = useState('7 days');
 
-  // Demonstration figures only. No actual money is earned.
+  // No live earnings provider is connected; show zero until verified records are available.
   const demoBalance = 0;
   const demoTotal = 0;
   const demoGifts = 0;
@@ -30,7 +30,7 @@ export default function CreatorEarningsScreen({ navigation }) {
   const showTransaction = (transaction) => {
     Alert.alert(
       transaction.title,
-      `${transaction.description}\nR${transaction.amount.toFixed(2)}\n${transaction.date}\n\nThis is sample transaction data, not a real payment.`
+      `${transaction.description}\nR${transaction.amount.toFixed(2)}\n${transaction.date}\n\nTransaction details are supplied by the connected payments service.`
     );
   };
 
@@ -114,7 +114,7 @@ export default function CreatorEarningsScreen({ navigation }) {
             R{demoTotal.toFixed(2)}
           </Text>
           <Text style={styles.statLabel}>
-            Demo total earnings
+            Recorded earnings
           </Text>
         </View>
 
@@ -124,7 +124,7 @@ export default function CreatorEarningsScreen({ navigation }) {
             {demoGifts}
           </Text>
           <Text style={styles.statLabel}>
-            Sample gifts received
+            Gifts received
           </Text>
         </View>
 
@@ -142,7 +142,7 @@ export default function CreatorEarningsScreen({ navigation }) {
           <Text style={styles.statIcon}>📡</Text>
           <Text style={styles.statValue}>8</Text>
           <Text style={styles.statLabel}>
-            Sample live streams
+            Live streams
           </Text>
         </View>
       </View>

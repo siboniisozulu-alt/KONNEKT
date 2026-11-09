@@ -1,5 +1,8 @@
 
 import React, { useState } from 'react';
+import { useAuth } from '../AuthContext';
+import { supabase } from '../lib_supabase';
+import { ensureKonnektIdentity, createGroupKeyEnvelopes } from '../services/konnektEncryption';
 import {
   View,
   Text,
@@ -13,6 +16,9 @@ import {
 const sampleContacts = [];
 
 export default function CreateGroupScreen({ navigation, route }) {
+  const { user } = useAuth();
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState('');
   const [groupName, setGroupName] = useState('');
   const [description, setDescription] = useState('');
   const [search, setSearch] = useState('');
@@ -40,42 +46,37 @@ export default function CreateGroupScreen({ navigation, route }) {
     });
   };
 
-  const createGroup = () => {
-    if (!groupName.trim()) {
-      Alert.alert('Group name required', 'Please enter a group name.');
-      return;
-    }
-
-    if (selectedMembers.length < 2) {
-      Alert.alert(
-        'Select members',
-        'Choose at least two members for your group.'
-      );
-      return;
-    }
-
-    const group = {
-      id: Date.now().toString(),
-      name: groupName.trim(),
-      description: description.trim(),
-      members: selectedMembers,
-      createdAt: new Date().toISOString(),
-    };
-
-    if (route?.params?.onCreateGroup) {
-      route.params.onCreateGroup(group);
-    }
-
-    Alert.alert(
-      'Group prepared',
-      `${group.name} has been prepared with ${selectedMembers.length} selected members. Group creation will be connected to the backend later.`,
-      [
-        {
-          text: 'Continue',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
+  const createGroup = async () => {
+    if (!groupName.trim()) { Alert.alert('Group name required', 'Please enter a group name.'); return; }
+    if (!user?.id) { Alert.alert('Sign in required', 'Sign in before creating a group.'); return; }
+    if (selectedMembers.length < 2) { Alert.alert('Select members', 'Choose at least two members for your group.'); return; }
+    const memberIds = [...new Set([user.id, ...selectedMembers.map(member => member.id).filter(Boolean)])];
+    if (memberIds.length < 3) { Alert.alert('Select members', 'A group needs you and at least two other members.'); return; }
+    setSaving(true); setNotice('');
+    let conversationId = null;
+    try {
+      const { data: conversation, error: conversationError } = await supabase.from('conversations')
+        .insert({ title: groupName.trim(), is_group: true, created_by: user.id }).select('id').single();
+      if (conversationError) throw conversationError;
+      conversationId = conversation.id;
+      const { error: membersError } = await supabase.from('conversation_members')
+        .insert(memberIds.map(user_id => ({ conversation_id: conversationId, user_id })));
+      if (membersError) throw membersError;
+      await ensureKonnektIdentity(user.id);
+      const { data: profiles, error: profilesError } = await supabase.from('profiles')
+        .select('id,encryption_public_key').in('id', memberIds);
+      if (profilesError) throw profilesError;
+      const keysReady = (profiles || []).length === memberIds.length && profiles.every(profile => !!profile.encryption_public_key);
+      if (keysReady) {
+        await createGroupKeyEnvelopes(conversationId, profiles, 1);
+      }
+      navigation.replace('ChatConversation', { chatId: conversationId, chatName: groupName.trim(), isGroup: true });
+      if (!keysReady) setNotice('Group created. Members need to open KONNEKT once before encrypted group messages can be sent.');
+    } catch (error) {
+      // If creation failed before membership setup, remove only the incomplete group shell created in this attempt.
+      if (conversationId) await supabase.from('conversations').delete().eq('id', conversationId).eq('created_by', user.id);
+      Alert.alert('Could not create group', error.message || 'Please try again.');
+    } finally { setSaving(false); }
   };
 
   const renderContact = ({ item }) => {
@@ -125,8 +126,8 @@ export default function CreateGroupScreen({ navigation, route }) {
 
         <Text style={styles.title}>New Group</Text>
 
-        <TouchableOpacity onPress={createGroup}>
-          <Text style={styles.createButton}>Create</Text>
+        <TouchableOpacity onPress={createGroup} disabled={saving}>
+          <Text style={styles.createButton}>{saving ? 'Creating…' : 'Create'}</Text>
         </TouchableOpacity>
       </View>
 
@@ -177,9 +178,9 @@ export default function CreateGroupScreen({ navigation, route }) {
         }
       />
 
+      {!!notice && <Text style={styles.footer}>{notice}</Text>}
       <Text style={styles.footer}>
-        Selected members will be invited when group creation
-        is connected to the KONNEKT backend.
+        Group conversations are saved to your KONNEKT account. Encrypted group messaging requires each member to open the app once.
       </Text>
     </View>
   );

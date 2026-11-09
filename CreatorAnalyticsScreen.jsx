@@ -1,392 +1,50 @@
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, ScrollView, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
+import { useAuth } from '../AuthContext';
+import { supabase } from '../lib_supabase';
 
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
-  StyleSheet,
-} from 'react-native';
-
-const periods = ['7 days', '30 days', '90 days'];
-
-const analyticsData = {
-  '7 days': {
-    views: '—',
-    likes: '—',
-    comments: '—',
-    shares: '—',
-    followers: '—',
-    engagement: '—',
-  },
-  '30 days': {
-    views: '—',
-    likes: '—',
-    comments: '—',
-    shares: '—',
-    followers: '—',
-    engagement: '—',
-  },
-  '90 days': {
-    views: '—',
-    likes: '—',
-    comments: '—',
-    shares: '—',
-    followers: '—',
-    engagement: '—',
-  },
-};
-
-const topVideos = [];
-
+const periods = [{ label: '7 days', days: 7 }, { label: '30 days', days: 30 }, { label: '90 days', days: 90 }];
 export default function CreatorAnalyticsScreen({ navigation }) {
-  const [selectedPeriod, setSelectedPeriod] = useState('7 days');
-
-  const data = analyticsData[selectedPeriod];
-
-  const metricCards = [
-    { title: 'Video views', value: data.views, icon: '👁' },
-    { title: 'Likes', value: data.likes, icon: '❤️' },
-    { title: 'Comments', value: data.comments, icon: '💬' },
-    { title: 'Shares', value: data.shares, icon: '↗️' },
-    { title: 'New followers', value: data.followers, icon: '👥' },
-    { title: 'Engagement', value: data.engagement, icon: '📊' },
-  ];
-
-  return (
-    <ScrollView
-      style={styles.container}
-      contentContainerStyle={styles.content}
-    >
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.back}>‹ Back</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.headerTitle}>Creator Analytics</Text>
-
-        <Text style={styles.headerIcon}>📈</Text>
-      </View>
-
-      <View style={styles.intro}>
-        <Text style={styles.introTitle}>Understand your growth</Text>
-        <Text style={styles.introDescription}>
-          Track how your KONNEKT content performs and discover
-          what your audience enjoys.
-        </Text>
-      </View>
-
-      <View style={styles.periodRow}>
-        {periods.map(period => (
-          <TouchableOpacity
-            key={period}
-            onPress={() => setSelectedPeriod(period)}
-            style={[
-              styles.periodButton,
-              selectedPeriod === period && styles.activePeriod,
-            ]}
-          >
-            <Text
-              style={[
-                styles.periodText,
-                selectedPeriod === period && styles.activePeriodText,
-              ]}
-            >
-              {period}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-
-      <Text style={styles.sectionTitle}>Performance overview</Text>
-
-      <View style={styles.metricsGrid}>
-        {metricCards.map(metric => (
-          <View key={metric.title} style={styles.metricCard}>
-            <Text style={styles.metricIcon}>{metric.icon}</Text>
-            <Text style={styles.metricValue}>{metric.value}</Text>
-            <Text style={styles.metricTitle}>{metric.title}</Text>
-          </View>
-        ))}
-      </View>
-
-      <Text style={styles.sectionTitle}>Audience growth</Text>
-
-      <View style={styles.growthCard}>
-        <View>
-          <Text style={styles.growthLabel}>New followers</Text>
-          <Text style={styles.growthValue}>{data.followers}</Text>
-          <Text style={styles.growthCaption}>
-            During the selected period
-          </Text>
-        </View>
-
-        <Text style={styles.growthIcon}>📈</Text>
-      </View>
-
-      <Text style={styles.sectionTitle}>Top-performing videos</Text>
-
-      {topVideos.map(video => (
-        <View key={video.id} style={styles.videoCard}>
-          <View style={styles.videoThumbnail}>
-            <Text style={styles.videoEmoji}>{video.emoji}</Text>
-          </View>
-
-          <View style={styles.videoInfo}>
-            <Text style={styles.videoTitle}>{video.title}</Text>
-            <Text style={styles.videoStats}>
-              👁 {video.views} views
-            </Text>
-            <Text style={styles.videoStats}>
-              ❤️ {video.likes} likes
-            </Text>
-          </View>
-        </View>
-      ))}
-
-      <Text style={styles.sectionTitle}>Live-stream analytics</Text>
-
-      <View style={styles.liveCard}>
-        <Text style={styles.liveIcon}>🔴</Text>
-
-        <View style={styles.liveInfo}>
-          <Text style={styles.liveTitle}>Live performance</Text>
-          <Text style={styles.liveDescription}>
-            Live viewers, watch time, comments and gifts will
-            appear here after live-stream analytics are connected.
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.tipCard}>
-        <Text style={styles.tipTitle}>💡 Creator tip</Text>
-        <Text style={styles.tipText}>
-          Study which videos receive the most engagement.
-          Experiment with different topics and posting times
-          to learn what your audience enjoys.
-        </Text>
-      </View>
-
-      <Text style={styles.footer}>
-        Analytics will appear here as your account receives real activity.
-      </Text>
-    </ScrollView>
-  );
+  const { user } = useAuth();
+  const [selected, setSelected] = useState(periods[0]);
+  const [metrics, setMetrics] = useState({ posts: 0, views: 0, likes: 0, comments: 0, followers: 0 });
+  const [busy, setBusy] = useState(true);
+  const [notice, setNotice] = useState('');
+  const load = useCallback(async () => {
+    if (!user?.id) return;
+    setBusy(true); setNotice('');
+    try {
+      const since = new Date(Date.now() - selected.days * 86400000).toISOString();
+      const { data: posts, error: postError } = await supabase.from('posts').select('id').eq('user_id', user.id).gte('created_at', since);
+      if (postError) throw postError;
+      const ids = (posts || []).map(post => post.id);
+      let views = 0, likes = 0, comments = 0;
+      if (ids.length) {
+        const [viewResult, likeResult, commentResult] = await Promise.all([
+          supabase.from('post_views').select('post_id', { count: 'exact', head: true }).in('post_id', ids).gte('viewed_at', since),
+          supabase.from('post_likes').select('post_id', { count: 'exact', head: true }).in('post_id', ids).gte('created_at', since),
+          supabase.from('post_comments').select('id', { count: 'exact', head: true }).in('post_id', ids).gte('created_at', since)
+        ]);
+        if (viewResult.error) throw viewResult.error;
+        if (likeResult.error) throw likeResult.error;
+        if (commentResult.error) throw commentResult.error;
+        views = viewResult.count || 0; likes = likeResult.count || 0; comments = commentResult.count || 0;
+      }
+      const { count: followers, error: followerError } = await supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followed_id', user.id).gte('created_at', since);
+      if (followerError) throw followerError;
+      setMetrics({ posts: ids.length, views, likes, comments, followers: followers || 0 });
+    } catch (error) { setNotice(error.message || 'Could not load creator analytics.'); }
+    finally { setBusy(false); }
+  }, [user?.id, selected.days]);
+  useEffect(() => { load(); }, [load]);
+  const cards = [{ label: 'Posts published', value: metrics.posts, icon: '🎬' }, { label: 'Unique views', value: metrics.views, icon: '👁' }, { label: 'Likes received', value: metrics.likes, icon: '❤️' }, { label: 'Comments received', value: metrics.comments, icon: '💬' }, { label: 'New followers', value: metrics.followers, icon: '👥' }];
+  return <ScrollView style={s.container} contentContainerStyle={s.content}>
+    <View style={s.header}><TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.back}>‹ Back</Text></TouchableOpacity><Text style={s.title}>Creator analytics</Text><TouchableOpacity onPress={load}><Text style={s.refresh}>↻</Text></TouchableOpacity></View>
+    <Text style={s.subtitle}>Real engagement totals for your posts and followers. Views are unique account views per post. Shares are not counted because share tracking is not implemented yet.</Text>
+    <View style={s.periods}>{periods.map(period => <TouchableOpacity key={period.label} style={[s.period, selected.label === period.label && s.active]} onPress={() => setSelected(period)}><Text style={s.periodText}>{period.label}</Text></TouchableOpacity>)}</View>
+    {busy ? <ActivityIndicator color="#168BFF" style={{ marginTop: 40 }}/> : <View style={s.grid}>{cards.map(card => <View key={card.label} style={s.card}><Text style={s.icon}>{card.icon}</Text><Text style={s.value}>{card.value.toLocaleString()}</Text><Text style={s.label}>{card.label}</Text></View>)}</View>}
+    {!!notice && <Text style={s.error}>{notice}</Text>}
+    <Text style={s.foot}>Period: last {selected.days} days. These are account-level totals, not estimated reach or earnings.</Text>
+  </ScrollView>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7F8',
-  },
-  content: {
-    paddingBottom: 30,
-  },
-  header: {
-    backgroundColor: '#075E54',
-    paddingTop: 43,
-    padding: 17,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  back: {
-    color: '#FFFFFF',
-    fontSize: 13,
-  },
-  headerTitle: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  headerIcon: {
-    fontSize: 19,
-  },
-  intro: {
-    backgroundColor: '#FFFFFF',
-    margin: 14,
-    padding: 16,
-    borderRadius: 12,
-  },
-  introTitle: {
-    color: '#17202A',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  introDescription: {
-    color: '#667085',
-    fontSize: 11,
-    lineHeight: 17,
-    marginTop: 7,
-  },
-  periodRow: {
-    flexDirection: 'row',
-    marginHorizontal: 14,
-    backgroundColor: '#FFFFFF',
-    padding: 5,
-    borderRadius: 9,
-  },
-  periodButton: {
-    flex: 1,
-    padding: 10,
-    alignItems: 'center',
-    borderRadius: 7,
-  },
-  activePeriod: {
-    backgroundColor: '#075E54',
-  },
-  periodText: {
-    color: '#667085',
-    fontSize: 10,
-    fontWeight: 'bold',
-  },
-  activePeriodText: {
-    color: '#FFFFFF',
-  },
-  sectionTitle: {
-    color: '#17202A',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginHorizontal: 15,
-    marginTop: 22,
-    marginBottom: 12,
-  },
-  metricsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 9,
-  },
-  metricCard: {
-    width: '46%',
-    margin: '2%',
-    padding: 14,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 11,
-  },
-  metricIcon: {
-    fontSize: 21,
-  },
-  metricValue: {
-    color: '#075E54',
-    fontSize: 19,
-    fontWeight: 'bold',
-    marginTop: 9,
-  },
-  metricTitle: {
-    color: '#667085',
-    fontSize: 10,
-    marginTop: 4,
-  },
-  growthCard: {
-    marginHorizontal: 14,
-    backgroundColor: '#FFFFFF',
-    padding: 17,
-    borderRadius: 11,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  growthLabel: {
-    color: '#667085',
-    fontSize: 10,
-  },
-  growthValue: {
-    color: '#075E54',
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 5,
-  },
-  growthCaption: {
-    color: '#98A2B3',
-    fontSize: 9,
-    marginTop: 4,
-  },
-  growthIcon: {
-    fontSize: 38,
-  },
-  videoCard: {
-    marginHorizontal: 14,
-    marginBottom: 9,
-    padding: 11,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  videoThumbnail: {
-    width: 58,
-    height: 58,
-    backgroundColor: '#E8F4F1',
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  videoEmoji: {
-    fontSize: 27,
-  },
-  videoInfo: {
-    marginLeft: 12,
-    flex: 1,
-  },
-  videoTitle: {
-    color: '#17202A',
-    fontSize: 11,
-    fontWeight: 'bold',
-  },
-  videoStats: {
-    color: '#667085',
-    fontSize: 9,
-    marginTop: 5,
-  },
-  liveCard: {
-    marginHorizontal: 14,
-    padding: 15,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 10,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  liveIcon: {
-    fontSize: 30,
-    marginRight: 12,
-  },
-  liveInfo: {
-    flex: 1,
-  },
-  liveTitle: {
-    color: '#17202A',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  liveDescription: {
-    color: '#667085',
-    fontSize: 9,
-    lineHeight: 15,
-    marginTop: 5,
-  },
-  tipCard: {
-    backgroundColor: '#E8F4F1',
-    margin: 14,
-    padding: 15,
-    borderRadius: 10,
-  },
-  tipTitle: {
-    color: '#075E54',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  tipText: {
-    color: '#344054',
-    fontSize: 10,
-    lineHeight: 16,
-    marginTop: 7,
-  },
-  footer: {
-    color: '#98A2B3',
-    fontSize: 9,
-    textAlign: 'center',
-    marginHorizontal: 20,
-    marginTop: 12,
-    lineHeight: 15,
-  },
-});
+const s=StyleSheet.create({container:{flex:1,backgroundColor:'#07111F'},content:{padding:18,paddingBottom:35},header:{marginTop:20,marginBottom:18,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},back:{color:'#168BFF',fontSize:16},title:{color:'#FFF',fontSize:22,fontWeight:'bold'},refresh:{color:'#8CCBFF',fontSize:23},subtitle:{color:'#9EB0C4',lineHeight:19,marginBottom:18},periods:{flexDirection:'row',gap:8,marginBottom:18},period:{flex:1,padding:11,borderRadius:9,backgroundColor:'#14243A',alignItems:'center'},active:{backgroundColor:'#168BFF'},periodText:{color:'#FFF',fontWeight:'bold',fontSize:11},grid:{flexDirection:'row',flexWrap:'wrap',gap:10},card:{width:'48%',backgroundColor:'#14243A',borderRadius:14,padding:16,minHeight:125},icon:{fontSize:22},value:{color:'#FFF',fontSize:25,fontWeight:'bold',marginTop:10},label:{color:'#9EB0C4',fontSize:11,marginTop:4},error:{color:'#FF9CA8',marginTop:14},foot:{color:'#74869B',fontSize:10,lineHeight:15,marginTop:20}});

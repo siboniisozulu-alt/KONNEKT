@@ -9,26 +9,7 @@ import {
   Alert,
 } from 'react-native';
 
-const payoutHistory = [
-  {
-    id: '1',
-    date: 'Example: 05 November 2026',
-    amount: 'R250.00',
-    status: 'Demo',
-  },
-  {
-    id: '2',
-    date: 'Example: 28 October 2026',
-    amount: 'R180.00',
-    status: 'Demo',
-  },
-  {
-    id: '3',
-    date: 'Example: 20 October 2026',
-    amount: 'R95.00',
-    status: 'Demo',
-  },
-];
+const payoutHistory = [];
 
 export default function CreatorPayoutScreen({ navigation }) {
   const [paymentMethod, setPaymentMethod] = useState('Not connected');
@@ -153,6 +134,7 @@ export default function CreatorPayoutScreen({ navigation }) {
           </View>
         </View>
       ))}
+      {payoutHistory.length === 0 && <Text style={styles.footer}>No payout records yet.</Text>}
 
       <View style={styles.securityCard}>
         <Text style={styles.securityTitle}>🔐 Payment security</Text>
@@ -164,8 +146,7 @@ export default function CreatorPayoutScreen({ navigation }) {
       </View>
 
       <Text style={styles.footer}>
-        All balances are currently R0.00. History entries are
-        examples only and do not represent real transactions.
+        No payout history is available. Payments and withdrawals are not active.
       </Text>
     </ScrollView>
   );

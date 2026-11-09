@@ -9,29 +9,8 @@ import {
 } from 'react-native';
 
 export default function MessageInfoScreen({ navigation, route }) {
-  const message = route?.params?.message || {
-    text: 'Hello! How are you?',
-    time: '10:30',
-    date: 'Today',
-    status: 'read',
-  };
-
-  const recipients = route?.params?.recipients || [
-    {
-      id: '1',
-      name: 'Thabo',
-      sent: '10:30',
-      delivered: '10:31',
-      read: '10:35',
-    },
-    {
-      id: '2',
-      name: 'Lerato',
-      sent: '10:30',
-      delivered: '10:32',
-      read: null,
-    },
-  ];
+  const message = route?.params?.message || {};
+  const recipients = route?.params?.recipients || [];
 
   const getStatus = (recipient) => {
     if (recipient.read) return 'Read';
@@ -55,9 +34,9 @@ export default function MessageInfoScreen({ navigation, route }) {
           <Text style={styles.sectionTitle}>YOUR MESSAGE</Text>
 
           <View style={styles.messageBubble}>
-            <Text style={styles.messageText}>{message.text}</Text>
+            <Text style={styles.messageText}>{message.text || 'No message selected.'}</Text>
             <Text style={styles.messageTime}>
-              {message.date} · {message.time}
+              {message.date && message.time ? `${message.date} · ${message.time}` : ''}
             </Text>
           </View>
         </View>
@@ -70,7 +49,7 @@ export default function MessageInfoScreen({ navigation, route }) {
             </Text>
           </View>
 
-          {recipients.map((recipient) => (
+          {recipients.length === 0 ? <Text style={styles.statusText}>No delivery information is available for this message.</Text> : recipients.map((recipient) => (
             <View key={recipient.id} style={styles.recipientCard}>
               <View style={styles.avatar}>
                 <Text style={styles.avatarText}>
@@ -125,8 +104,7 @@ export default function MessageInfoScreen({ navigation, route }) {
 
         <View style={styles.note}>
           <Text style={styles.noteText}>
-            Delivery and read information will update automatically
-            once KONNEKT messaging is connected to its live backend.
+            Delivery and read information are shown only when returned by the live messaging service.
           </Text>
         </View>
       </ScrollView>

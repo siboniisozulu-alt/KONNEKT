@@ -1,5 +1,6 @@
 
 import React, { useState } from 'react';
+import { blockKonnektUser } from '../services/safety';
 import {
   View,
   Text,
@@ -178,14 +179,14 @@ export default function ChatDetailsScreen({ navigation, route }) {
           icon="🚫"
           title="Block contact"
           subtitle="Stop this person from contacting you"
-          onPress={() => showDemoMessage('Block contact')}
+          onPress={() => Alert.alert('Block contact?', `Stop ${contact.name || 'this member'} from starting direct chats with you?`, [{ text: 'Cancel', style: 'cancel' }, { text: 'Block', style: 'destructive', onPress: async () => { try { await blockKonnektUser(contact.id); Alert.alert('Blocked', 'This account has been added to your blocked list.'); } catch (error) { Alert.alert('Could not block account', error.message); } } }])}
         />
 
         <DetailRow
           icon="⚠️"
           title="Report contact"
           subtitle="Report inappropriate behaviour"
-          onPress={() => showDemoMessage('Report contact')}
+          onPress={() => navigation.navigate('ReportUser', { contact })}
         />
 
         <DetailRow

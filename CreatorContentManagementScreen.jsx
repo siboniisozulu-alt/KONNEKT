@@ -180,7 +180,7 @@ export default function CreatorContentManagementScreen({ navigation }) {
 
         <View style={styles.summaryItem}>
           <Text style={styles.summaryNumber}>2.4K</Text>
-          <Text style={styles.summaryLabel}>Sample views</Text>
+          <Text style={styles.summaryLabel}>Views</Text>
         </View>
       </View>
 

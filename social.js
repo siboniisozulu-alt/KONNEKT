@@ -17,14 +17,17 @@ export async function getConversationList(userId) {
     const { data: members } = await supabase.from('conversation_members').select('user_id').eq('conversation_id', c.id);
     const otherIds = (members || []).map(m => m.user_id).filter(id => id !== userId);
     const { data: profiles } = otherIds.length ? await supabase.from('profiles').select('id,username,full_name,avatar_url').in('id', otherIds) : { data: [] };
-    const { data: last } = await supabase.from('messages').select('body,created_at').eq('conversation_id', c.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
-    return { ...c, members: profiles || [], displayName: c.title || (profiles || []).map(p => p.full_name || p.username || 'KONNEKT user').join(', ') || 'Conversation', lastMessage: last?.body || 'Start a conversation', lastAt: last?.created_at || c.created_at };
+    const { data: last } = await supabase.from('messages').select('body,created_at,is_encrypted,media_type').eq('conversation_id', c.id).order('created_at', { ascending: false }).limit(1).maybeSingle();
+    return { ...c, members: profiles || [], displayName: c.title || (profiles || []).map(p => p.full_name || p.username || 'KONNEKT user').join(', ') || 'Conversation', lastMessage: last?.is_encrypted ? '🔒 Encrypted message' : last?.media_type ? '📎 Attachment' : (last?.body || 'Start a conversation'), lastAt: last?.created_at || c.created_at };
   }));
   return rows;
 }
 
 export async function createDirectConversation(myId, otherId) {
   if (!otherId || otherId === myId) throw new Error('Choose another KONNEKT user.');
+  const { data: blocked, error: blockError } = await supabase.rpc('konnekt_is_direct_blocked', { user_a: myId, user_b: otherId });
+  if (blockError) throw blockError;
+  if (blocked) throw new Error('You cannot start a direct conversation because one of the accounts has blocked the other.');
   const { data: mine, error: mineError } = await supabase.from('conversation_members').select('conversation_id').eq('user_id', myId);
   if (mineError) throw mineError;
   const ids = (mine || []).map(x => x.conversation_id);
