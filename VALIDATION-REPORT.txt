@@ -1,0 +1,15 @@
+KONNEKT all-stages upgrade — package validation report
+Date: 2026-11-09
+
+PASS
+- 97 JavaScript/JSX files parsed with the installed TypeScript JSX parser; zero syntax errors.
+- Previously recovered static import/path inspection is retained from the source archive validation notes.
+- ZIP source archive integrity will be checked after packaging.
+
+NOT VERIFIED
+- `npm install` timed out in the available environment; `npm run build` was not run successfully. Run both in GitHub Actions or a local development environment.
+- Supabase migrations were not executed against the user's live project.
+- No physical Android phones were available for camera, microphone, calls, notifications, performance or upgrade testing.
+- TURN, OneSignal/FCM, signed release keystore, payment provider, legal review and moderator staffing require external setup.
+
+This is a beta preparation source package, not a certified production release. See KONNEKT-BETA-1.0-95-PERCENT-PACKAGE-NOTES.md.

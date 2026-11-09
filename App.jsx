@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { AuthProvider, useAuth } from './src/AuthContext';
 import { supabase } from './src/lib_supabase';
 import {
@@ -7,8 +7,7 @@ import {
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
-  StatusBar,
-  Modal
+  StatusBar
 } from 'react-native';
 
 /*
@@ -48,21 +47,41 @@ const tabs = [
 function AppShell() {
   const { session, user, loading, recovery } = useAuth();
   const [stack, setStack] = useState([{ name: 'Welcome', params: {} }]);
-  const [incomingCall, setIncomingCall] = useState(null);
+  const handledIncomingCall = useRef(new Set());
+  const handledGroupCalls = useRef(new Set());
 
   useEffect(() => {
     if (!loading) setStack([{ name: recovery ? 'PasswordReset' : (session ? 'Chats' : 'Welcome'), params: {} }]);
   }, [loading, session?.user?.id, recovery]);
 
   useEffect(() => {
-    if (!user?.id) { setIncomingCall(null); return; }
-    const channel = supabase.channel(`incoming-calls-${user.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'call_sessions', filter: `callee_id=eq.${user.id}` }, async payload => {
-        if (payload.new.status !== 'ringing') return;
-        const { data: profile } = await supabase.from('profiles').select('username,full_name').eq('id', payload.new.caller_id).maybeSingle();
-        setIncomingCall({ ...payload.new, contact: { name: profile?.full_name || profile?.username || 'KONNEKT member', username: profile?.username ? `@${profile.username}` : '' } });
-      })
-      .subscribe();
+    if (!user?.id) return undefined;
+    const openIncoming = async call => {
+      if (!call?.id || handledIncomingCall.current.has(call.id) || call.callee_id !== user.id || call.status !== 'ringing') return;
+      handledIncomingCall.current.add(call.id);
+      const { data: caller } = await supabase.from('profiles').select('id,username,full_name,avatar_url').eq('id', call.caller_id).maybeSingle();
+      setStack(previous => {
+        if (previous.some(item => item.params?.callId === call.id)) return previous;
+        return [...previous, { name: 'Call', params: { callId: call.id, isCaller: false, incoming: true, callType: call.call_type, contact: { name: caller?.full_name || caller?.username || 'KONNEKT member', username: caller?.username ? `@${caller.username}` : '' } } }];
+      });
+    };
+    supabase.from('call_sessions').select('*').eq('callee_id', user.id).eq('status', 'ringing').order('created_at', { ascending: false }).limit(1).then(({ data }) => { if (data?.[0]) openIncoming(data[0]); });
+    const channel = supabase.channel(`incoming-calls-${user.id}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'call_sessions', filter: `callee_id=eq.${user.id}` }, payload => openIncoming(payload.new)).subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!user?.id) return undefined;
+    const openGroupInvite = async participant => {
+      if (!participant?.call_id || participant.user_id !== user.id || participant.status !== 'invited' || handledGroupCalls.current.has(participant.call_id)) return;
+      handledGroupCalls.current.add(participant.call_id);
+      const { data: call } = await supabase.from('group_call_sessions').select('id,conversation_id,call_type,status').eq('id', participant.call_id).maybeSingle();
+      if (!call || call.status === 'ended') return;
+      const { data: conversation } = await supabase.from('conversations').select('title').eq('id', call.conversation_id).maybeSingle();
+      setStack(previous => previous.some(item => item.params?.callId === call.id) ? previous : [...previous, { name: 'GroupCall', params: { callId: call.id, conversationId: call.conversation_id, callType: call.call_type, groupName: conversation?.title || 'KONNEKT group' } }]);
+    };
+    supabase.from('group_call_participants').select('call_id,user_id,status').eq('user_id', user.id).eq('status', 'invited').then(({ data }) => { (data || []).forEach(openGroupInvite); });
+    const channel = supabase.channel(`group-call-invites-${user.id}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_call_participants', filter: `user_id=eq.${user.id}` }, payload => openGroupInvite(payload.new)).subscribe();
     return () => { supabase.removeChannel(channel); };
   }, [user?.id]);
 
@@ -159,25 +178,6 @@ function AppShell() {
           })}
         </View>
       )}
-      <Modal visible={!!incomingCall} transparent animationType="fade" onRequestClose={() => setIncomingCall(null)}>
-        <View style={styles.callOverlay}>
-          <View style={styles.callCard}>
-            <Text style={styles.callTitle}>Incoming {incomingCall?.call_type || 'voice'} call</Text>
-            <Text style={styles.callName}>{incomingCall?.contact?.name || 'KONNEKT member'}</Text>
-            <Text style={styles.callHint}>KONNEKT is calling you</Text>
-            <View style={styles.callActions}>
-              <TouchableOpacity style={[styles.callAction, styles.decline]} onPress={async () => {
-                const call = incomingCall; setIncomingCall(null);
-                if (call?.id) await supabase.from('call_sessions').update({ status: 'rejected', ended_at: new Date().toISOString() }).eq('id', call.id);
-              }}><Text style={styles.callActionText}>Decline</Text></TouchableOpacity>
-              <TouchableOpacity style={[styles.callAction, styles.answer]} onPress={() => {
-                const call = incomingCall; setIncomingCall(null);
-                if (call) navigation.navigate('Call', { incoming: true, callId: call.id, callType: call.call_type, contact: call.contact });
-              }}><Text style={styles.callActionText}>Answer</Text></TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
     </SafeAreaView>
   );
 }
@@ -257,16 +257,7 @@ const styles = StyleSheet.create({
   backText: {
     color: '#FFFFFF',
     fontWeight: 'bold'
-  },
-  callOverlay:{flex:1,backgroundColor:'rgba(0,0,0,0.72)',justifyContent:'center',alignItems:'center',padding:24},
-  callCard:{width:'100%',maxWidth:360,backgroundColor:'#14243A',borderRadius:20,padding:24,alignItems:'center'},
-  callTitle:{color:'#8FCBFF',fontSize:13,fontWeight:'bold',textTransform:'uppercase'},
-  callName:{color:'#FFF',fontSize:24,fontWeight:'bold',marginTop:15},
-  callHint:{color:'#A9BBD0',marginTop:7},
-  callActions:{flexDirection:'row',gap:14,marginTop:26},
-  callAction:{paddingHorizontal:24,paddingVertical:13,borderRadius:24,minWidth:110,alignItems:'center'},
-  decline:{backgroundColor:'#D94352'},answer:{backgroundColor:'#168BFF'},
-  callActionText:{color:'#FFF',fontWeight:'bold'}
+  }
 });
 
 export default function App() { return <AuthProvider><AppShell /></AuthProvider>; }

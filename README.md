@@ -1,23 +1,39 @@
-# KONNEKT
+# KONNEKT — Connecting people everywhere
 
-KONNEKT — Connecting people everywhere.
+KONNEKT is a React/Vite + Supabase + Capacitor social and communication app with five main tabs: Chats, Reels, Status, Discover and Profile.
 
-## Included backend-connected features
+## Start here
 
-- Supabase email/password authentication and profile persistence.
-- One-to-one private conversations with Supabase Realtime message updates.
-- Image, video and audio-file attachments in chats.
-- 24-hour text/photo/video status publishing and viewing.
-- Shared photo/video post feed with likes and comments.
-- In-app realtime notifications for messages, likes, comments and follows.
-- Row Level Security and Supabase Storage policies in `supabase/konnekt_schema.sql`.
+Read **[BETA-1.0-TEST-NOTES.md](BETA-1.0-TEST-NOTES.md)** for the feature centre, limitations and test status. After signing in, open Profile → All KONNEKT features to access the included feature screens.
 
-## Not yet a complete production feature
 
-- Live video broadcasting is not connected. The Live setup screen deliberately warns users rather than pretending to broadcast.
-- Browser push notifications while the app is closed are not configured; in-app notifications work while the app is open.
-- The messaging system is not end-to-end encrypted.
-- Reels currently provide a shared media feed, not a full TikTok-style recommendation algorithm.
-- Voice notes can be attached as audio files; an in-app voice recorder still needs implementation.
+Read **[KONNEKT-ALL-STAGES-UPGRADE-GUIDE.md](KONNEKT-ALL-STAGES-UPGRADE-GUIDE.md)** before deploying. It explains the additive database migrations, TURN/push setup, Android APK/AAB workflows and test gates.
 
-See `SUPABASE-SETUP.md` for database setup and two-account testing instructions.
+## Existing project preservation
+
+- Keep the existing Supabase project URL and publishable key in `src/lib_supabase.js`.
+- Keep existing users, messages, conversations, posts, statuses and Storage buckets.
+- Never run a database reset or destructive schema script.
+- Never put a Supabase `service_role` key, TURN permanent secret, FCM service-account file or signing keystore in the repository.
+
+## Development commands
+
+```bash
+npm install
+npm run dev
+npm run build
+npm run build:mobile
+```
+
+## Included project material
+
+- `src/screens/` — five main tabs and supporting screens.
+- `src/services/` — Supabase, realtime, calls, encryption, ranking, media and safety services.
+- `supabase/migrations/` — additive migrations; see the guide for order and previously-applied migrations.
+- `docs/` — privacy/terms drafts, community guidelines, moderator setup, TURN/push instructions and integrated test plan.
+- `.github/workflows/` — GitHub Pages deployment, debug APK and signed AAB workflows.
+- `android-res/` and `public/` — app icon, splash and PWA assets.
+
+## Important
+
+This is a development/test build. It is not certified as production secure or launch-ready. External services and legal/operator details must be configured and verified separately.

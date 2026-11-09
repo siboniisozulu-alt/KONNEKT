@@ -28,7 +28,7 @@ In Supabase Dashboard → SQL Editor, open `supabase/migrations/20261107_communi
 
 ## Step 4 — calling infrastructure
 
-The revised code now includes a WebRTC peer connection, microphone/camera capture, offer/answer/ICE signalling, mute/camera controls and an incoming-call prompt while the app is open. It also includes a Supabase Edge Function that creates short-lived coturn REST credentials. Deploy that function and configure `TURN_URLS` and `TURN_SHARED_SECRET` as server-side Supabase secrets. STUN-only fallback is provided but is not reliable across all mobile networks. Test calls on two physical devices and different networks before public launch. Incoming-call prompts while the app is closed still require native push/call integration.
+The migration and `src/services/calls.js` provide protected call records and realtime offer/answer/ICE signalling. A real call also requires a WebRTC media layer, microphone/camera permissions, incoming-call UI, lifecycle handling, and TURN credentials. STUN-only calls are not reliable across all mobile networks. Obtain a TURN service and keep its credentials out of source control before enabling public calling. The current CallScreen is still a demo UI; do not advertise calls as operational yet.
 
 ## Step 5 — encryption safety
 
@@ -40,32 +40,4 @@ Push the updated project to the `main` branch. In GitHub → Actions → “Buil
 
 ## Important status
 
-The revised code adds the WebRTC client and in-app incoming-call flow, group/direct receipt handling, and best-effort push invocation. It has not been runtime-tested against your live Supabase project or on physical Android devices in this workspace. Provider credentials, Edge Function deployment, database migration, camera/microphone permission checks, and multi-device tests are still required. End-to-end encryption is deliberately not enabled; see `ENCRYPTION-IMPLEMENTATION-STATUS.md`.
-
-
-## Revised code in this package
-
-The revised project now includes:
-- A WebRTC call client using browser/WebView media capture, Supabase offer/answer/ICE signalling, call controls, and an incoming-call prompt while the app is open.
-- TURN credentials minted by the `turn-credentials` Edge Function using coturn's time-limited REST credential mechanism. The browser does not receive the long-lived TURN shared secret.
-- Direct-message and group-message delivery/read receipt updates. A recipient's receipt is written when that recipient opens/views the message.
-- Best-effort push invocation after message insertion. A push-provider failure does not undo the saved message.
-
-## Additional setup required for calls
-
-1. Deploy `supabase/functions/turn-credentials` with the Supabase CLI.
-2. Configure Supabase Edge Function secrets `TURN_URLS` (comma-separated `turn:`/`turns:` URLs) and `TURN_SHARED_SECRET` (the coturn REST shared secret). These are server-side secrets; never add them as `VITE_` variables.
-3. Confirm microphone/camera permissions for the Android WebView and test on two separate devices and different networks. HTTPS is required for browser media capture.
-4. Calls currently require the app to be open and signed in to receive the in-app incoming-call prompt. Background/terminated-app incoming call delivery requires native call push handling and Android notification/channel configuration.
-
-## Additional setup required for push
-
-1. Configure the OneSignal Android app with the Firebase Cloud Messaging credentials.
-2. Set `VITE_ONESIGNAL_APP_ID` in the build environment.
-3. Set `ONESIGNAL_APP_ID`, `ONESIGNAL_REST_API_KEY`, `SUPABASE_URL`, and `SUPABASE_ANON_KEY` as Supabase Edge Function secrets.
-4. Deploy `supabase/functions/send-push`.
-5. Install the Android build, grant notification permission, and test with two registered devices.
-
-## Encryption remains intentionally unfinished
-
-See `ENCRYPTION-IMPLEMENTATION-STATUS.md`. The revised code does not claim to enable E2EE. A safe, audited Signal-protocol integration is still required before this feature can be enabled.
+This is a safe backend/integration foundation, not a claim that all four features are finished. The existing app has not been runtime-tested against your live Supabase project in this workspace. Before public launch, implement and test the WebRTC UI/transport, end-to-end encryption protocol, delivery receipt updates, and push event triggers with two real accounts and multiple Android devices.
