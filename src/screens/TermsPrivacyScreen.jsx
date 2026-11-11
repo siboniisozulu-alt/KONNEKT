@@ -64,8 +64,8 @@ export default function TermsPrivacyScreen({ navigation }) {
 
   const handleAcceptance = () => {
     Alert.alert(
-      'Demonstration only',
-      'Your selection has not been recorded as legal acceptance. KONNEKT needs approved final legal documents and a secure acceptance record before this can be used.'
+      'Terms not yet published',
+      'Your selection has not been recorded as legal acceptance. KONNEKT must publish legally reviewed final terms and a secure acceptance record before acceptance can be enabled.'
     );
   };
 

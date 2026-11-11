@@ -100,7 +100,7 @@ export default function CreatorSettingsScreen({ navigation }) {
           Personalise your creator experience and control
           how your audience interacts with your content.
         </Text>
-        <Text style={styles.previewLabel}>SETTINGS PREVIEW</Text>
+        <Text style={styles.previewLabel}>CREATOR SETTINGS</Text>
       </View>
 
       <View style={styles.notice}>
@@ -187,7 +187,7 @@ export default function CreatorSettingsScreen({ navigation }) {
           <View style={styles.toolInfo}>
             <Text style={styles.toolTitle}>Creator Verification</Text>
             <Text style={styles.toolDescription}>
-              View the verification application preview.
+              Review creator verification requirements.
             </Text>
           </View>
           <Text style={styles.arrow}>›</Text>
@@ -203,7 +203,7 @@ export default function CreatorSettingsScreen({ navigation }) {
           <View style={styles.toolInfo}>
             <Text style={styles.toolTitle}>Creator Safety</Text>
             <Text style={styles.toolDescription}>
-              Manage creator interaction safety previews.
+              Review creator safety requirements.
             </Text>
           </View>
           <Text style={styles.arrow}>›</Text>
@@ -219,7 +219,7 @@ export default function CreatorSettingsScreen({ navigation }) {
           <View style={styles.toolInfo}>
             <Text style={styles.toolTitle}>Brand Partnerships</Text>
             <Text style={styles.toolDescription}>
-              Explore sample creator campaign opportunities.
+              View brand partnership availability.
             </Text>
           </View>
           <Text style={styles.arrow}>›</Text>

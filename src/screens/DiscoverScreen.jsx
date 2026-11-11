@@ -1,154 +1,101 @@
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { View, Text, TextInput, TouchableOpacity, FlatList, StyleSheet, ActivityIndicator, Image } from 'react-native';
+import { useAuth } from '../AuthContext';
+import { supabase } from '../lib_supabase';
+import { createDirectConversation } from '../services/social';
 
-import React from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  ScrollView,
-  StyleSheet
-} from 'react-native';
-
+const columns = 'id,username,full_name,avatar_url,bio';
 export default function DiscoverScreen({ navigation }) {
-  const categories = [
-    { icon: '🎬', title: 'Trending Reels', description: 'Watch what everyone is sharing.' },
-    { icon: '👥', title: 'People', description: 'Find new people and make connections.' },
-    { icon: '🌍', title: 'Communities', description: 'Explore communities and interests.' },
-    { icon: '📸', title: 'Public Status', description: 'See updates from the KONNEKT community.' },
-    { icon: '🔥', title: 'Trending', description: 'Discover what is popular right now.' },
-    { icon: '✨', title: 'Explore', description: 'Find something new on KONNEKT.' }
-  ];
+  const { user } = useAuth();
+  const [people, setPeople] = useState([]);
+  const [following, setFollowing] = useState(new Set());
+  const [query, setQuery] = useState('');
+  const [busy, setBusy] = useState(true);
+  const [actionId, setActionId] = useState('');
+  const [notice, setNotice] = useState('');
 
-  return (
-    <View style={styles.container}>
-      <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <Text style={styles.logo}>KONNEKT</Text>
-          <Text style={styles.heading}>Discover</Text>
-          <Text style={styles.subtitle}>
-            Explore. Connect. Discover something new.
-          </Text>
-        </View>
+  const load = useCallback(async () => {
+    if (!user?.id) { setBusy(false); return; }
+    setBusy(true); setNotice('');
+    try {
+      const [profilesResult, followsResult] = await Promise.all([
+        supabase.from('profiles').select(columns).neq('id', user.id).order('full_name', { ascending: true }).limit(200),
+        supabase.from('follows').select('followed_id').eq('follower_id', user.id)
+      ]);
+      if (profilesResult.error) throw profilesResult.error;
+      if (followsResult.error) throw followsResult.error;
+      setPeople(profilesResult.data || []);
+      setFollowing(new Set((followsResult.data || []).map(row => row.followed_id)));
+    } catch (error) { setNotice(`Could not load Discover: ${error.message || 'Please try again.'}`); }
+    finally { setBusy(false); }
+  }, [user?.id]);
 
-        <View style={styles.search}>
-          <Text style={styles.searchText}>⌕  Search KONNEKT</Text>
-        </View>
+  useEffect(() => {
+    load();
+    const channel = supabase.channel(`discover-${user?.id || 'guest'}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'profiles' }, load)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'follows' }, load)
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
+  }, [load, user?.id]);
 
-        <Text style={styles.sectionTitle}>Explore KONNEKT</Text>
+  const filtered = useMemo(() => {
+    const q = query.trim().replace(/^@/, '').toLowerCase();
+    if (!q) return people;
+    return people.filter(p => `${p.username || ''} ${p.full_name || ''} ${p.bio || ''}`.toLowerCase().includes(q));
+  }, [people, query]);
 
-        {categories.map((item, index) => (
-          <TouchableOpacity
-            key={index}
-            style={styles.card}
-            activeOpacity={0.75}
-            onPress={() => {
-              if (item.title === 'Trending Reels') {
-                navigation.navigate('Reels');
-              }
-            }}
-          >
-            <Text style={styles.icon}>{item.icon}</Text>
-            <View style={styles.cardContent}>
-              <Text style={styles.cardTitle}>{item.title}</Text>
-              <Text style={styles.description}>{item.description}</Text>
-            </View>
-            <Text style={styles.arrow}>›</Text>
-          </TouchableOpacity>
-        ))}
+  const toggleFollow = async person => {
+    if (!user?.id || !person?.id || actionId) return;
+    setActionId(person.id); setNotice('');
+    const isFollowing = following.has(person.id);
+    try {
+      const result = isFollowing
+        ? await supabase.from('follows').delete().eq('follower_id', user.id).eq('followed_id', person.id)
+        : await supabase.from('follows').insert({ follower_id: user.id, followed_id: person.id });
+      if (result.error) throw result.error;
+      setFollowing(prev => { const next = new Set(prev); isFollowing ? next.delete(person.id) : next.add(person.id); return next; });
+    } catch (error) { setNotice(`Follow update failed: ${error.message || 'Please try again.'}`); }
+    finally { setActionId(''); }
+  };
 
-        <View style={styles.footer}>
-          <Text style={styles.footerText}>
-            KONNEKT — Connecting people everywhere.
-          </Text>
-        </View>
-      </ScrollView>
-    </View>
-  );
+  const openProfile = person => navigation.navigate('ContactProfile', { contact: {
+    id: person.id, name: person.full_name || person.username || 'KONNEKT member',
+    username: person.username ? `@${person.username}` : '@member',
+    avatar_url: person.avatar_url, bio: person.bio || '', initials: (person.full_name || person.username || 'K').slice(0, 1).toUpperCase(), onKonnekt: true
+  }});
+
+  const message = async person => {
+    setActionId(person.id); setNotice('');
+    try {
+      const chatId = await createDirectConversation(user.id, person.id);
+      navigation.navigate('ChatConversation', { chatId, chatName: person.full_name || (person.username ? `@${person.username}` : 'KONNEKT member') });
+    } catch (error) { setNotice(`Could not open chat: ${error.message || 'Please try again.'}`); }
+    finally { setActionId(''); }
+  };
+
+  const renderPerson = ({ item }) => {
+    const isFollowing = following.has(item.id);
+    return <View style={s.person}>
+      <TouchableOpacity style={s.identity} onPress={() => openProfile(item)}>
+        {item.avatar_url ? <Image source={{ uri: item.avatar_url }} style={s.avatarImage}/> : <View style={s.avatar}><Text style={s.avatarText}>{(item.full_name || item.username || 'K').slice(0,1).toUpperCase()}</Text></View>}
+        <View style={{ flex: 1, minWidth: 0 }}><Text style={s.name} numberOfLines={1}>{item.full_name || 'KONNEKT member'}</Text><Text style={s.username}>{item.username ? `@${item.username}` : 'Username not set'}</Text>{!!item.bio && <Text style={s.bio} numberOfLines={1}>{item.bio}</Text>}</View>
+      </TouchableOpacity>
+      <View style={s.actions}>
+        <TouchableOpacity style={[s.follow, isFollowing && s.following]} disabled={!!actionId} onPress={() => toggleFollow(item)}><Text style={s.followText}>{actionId === item.id ? '…' : isFollowing ? 'Following' : '+ Follow'}</Text></TouchableOpacity>
+        <TouchableOpacity style={s.message} disabled={!!actionId} onPress={() => message(item)}><Text style={s.messageText}>Message</Text></TouchableOpacity>
+      </View>
+    </View>;
+  };
+
+  return <View style={s.container}>
+    <View style={s.header}><View><Text style={s.title}>Discover</Text><Text style={s.subtitle}>Find people and creators on KONNEKT</Text></View><TouchableOpacity onPress={load} style={s.refresh}><Text style={s.refreshText}>↻ Refresh</Text></TouchableOpacity></View>
+    <TextInput style={s.search} value={query} onChangeText={setQuery} placeholder="Search people by name or @username" placeholderTextColor="#BBA9CC" autoCapitalize="none" returnKeyType="search"/>
+    <Text style={s.section}>{query.trim() ? `${filtered.length} matching accounts` : 'KONNEKT community'}</Text>
+    {busy ? <ActivityIndicator color="#6A0DAD" style={{ marginTop: 35 }}/> : <FlatList data={filtered} keyExtractor={p => p.id} renderItem={renderPerson} onRefresh={load} refreshing={busy} keyboardShouldPersistTaps="handled" ListEmptyComponent={<Text style={s.empty}>{query.trim() ? 'No accounts match your search.' : 'No other accounts are available yet. Ask another member to sign in and save their profile.'}</Text>}/>}
+    {!!notice && <Text style={s.notice}>{notice}</Text>}
+  </View>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#080812'
-  },
-  header: {
-    padding: 24,
-    paddingTop: 30
-  },
-  logo: {
-    color: '#168BFF',
-    fontSize: 13,
-    fontWeight: 'bold',
-    letterSpacing: 3
-  },
-  heading: {
-    color: '#FFFFFF',
-    fontSize: 32,
-    fontWeight: 'bold',
-    marginTop: 22
-  },
-  subtitle: {
-    color: '#9AA9BD',
-    fontSize: 14,
-    marginTop: 8
-  },
-  search: {
-    marginHorizontal: 20,
-    padding: 16,
-    backgroundColor: '#111C30',
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: '#263A53',
-    marginBottom: 28
-  },
-  searchText: {
-    color: '#8294AA',
-    fontSize: 14
-  },
-  sectionTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginHorizontal: 20,
-    marginBottom: 15
-  },
-  card: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#101B2D',
-    borderWidth: 1,
-    borderColor: '#233750',
-    borderRadius: 15,
-    padding: 17,
-    marginHorizontal: 20,
-    marginBottom: 12
-  },
-  icon: {
-    fontSize: 27,
-    marginRight: 15
-  },
-  cardContent: {
-    flex: 1
-  },
-  cardTitle: {
-    color: '#FFFFFF',
-    fontSize: 15,
-    fontWeight: 'bold'
-  },
-  description: {
-    color: '#91A1B5',
-    fontSize: 12,
-    marginTop: 5
-  },
-  arrow: {
-    color: '#168BFF',
-    fontSize: 25
-  },
-  footer: {
-    padding: 30,
-    alignItems: 'center'
-  },
-  footerText: {
-    color: '#64758B',
-    fontSize: 11
-  }
+const s = StyleSheet.create({
+ container:{flex:1,minHeight:0,backgroundColor:'#10091B',padding:18},header:{marginTop:18,marginBottom:16,flexDirection:'row',alignItems:'center',justifyContent:'space-between'},title:{color:'#FFF',fontSize:28,fontWeight:'bold'},subtitle:{color:'#BBA9CC',fontSize:11,marginTop:4},refresh:{padding:9,backgroundColor:'#241630',borderRadius:9},refreshText:{color:'#D8B8F5',fontWeight:'bold',fontSize:12},search:{backgroundColor:'#241630',borderColor:'#39244B',borderWidth:1,borderRadius:12,padding:14,color:'#FFF',marginBottom:18},section:{color:'#DDEBFA',fontSize:15,fontWeight:'bold',marginBottom:8},person:{paddingVertical:12,borderBottomWidth:1,borderColor:'#39244B'},identity:{flexDirection:'row',alignItems:'center',gap:11},avatar:{width:48,height:48,borderRadius:24,backgroundColor:'#3A0CA3',alignItems:'center',justifyContent:'center'},avatarImage:{width:48,height:48,borderRadius:24},avatarText:{color:'#FFF',fontSize:18,fontWeight:'bold'},name:{color:'#FFF',fontWeight:'bold'},username:{color:'#D8B8F5',fontSize:12,marginTop:3},bio:{color:'#BBA9CC',fontSize:11,marginTop:3},actions:{flexDirection:'row',gap:8,marginLeft:59,marginTop:9},follow:{backgroundColor:'#6A0DAD',paddingVertical:8,paddingHorizontal:13,borderRadius:18},following:{backgroundColor:'#39244B',borderWidth:1,borderColor:'#54708E'},followText:{color:'#FFF',fontSize:11,fontWeight:'bold'},message:{borderWidth:1,borderColor:'#6A0DAD',paddingVertical:7,paddingHorizontal:13,borderRadius:18},messageText:{color:'#D8B8F5',fontSize:11,fontWeight:'bold'},empty:{color:'#C4B4D0',textAlign:'center',marginTop:45,lineHeight:22},notice:{color:'#FFB6C0',marginTop:12,lineHeight:19}
 });

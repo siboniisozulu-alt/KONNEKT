@@ -1,287 +1,114 @@
-
-import React from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  Alert,
-} from 'react-native';
+import React, { useCallback, useEffect, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, ActivityIndicator, Image, Alert } from 'react-native';
+import { useAuth } from '../AuthContext';
+import { supabase } from '../lib_supabase';
+import { createDirectConversation } from '../services/social';
+import { blockKonnektUser } from '../services/safety';
+import { createCall } from '../services/calls';
 
 export default function ContactProfileScreen({ navigation, route }) {
-  const contact = route?.params?.contact || {
-    id: 'demo',
-    name: 'KONNEKT User',
-    username: '@konnektuser',
-    phone: '+27',
-    initials: 'KU',
-    bio: 'Connecting with people on KONNEKT.',
-    onKonnekt: true,
+  const { user } = useAuth();
+  const initial = route?.params?.contact || {};
+  const personId = initial.id;
+  const [profile, setProfile] = useState(initial);
+  const [following, setFollowing] = useState(false);
+  const [followersCount, setFollowersCount] = useState(0);
+  const [followingCount, setFollowingCount] = useState(0);
+  const [postCount, setPostCount] = useState(0);
+  const [busy, setBusy] = useState(true);
+  const [action, setAction] = useState(false);
+  const [notice, setNotice] = useState('');
+
+  const load = useCallback(async () => {
+    if (!personId || !user?.id) { setBusy(false); return; }
+    setBusy(true); setNotice('');
+    try {
+      const [p, f, fr, fg, posts] = await Promise.all([
+        supabase.from('profiles').select('id,username,full_name,avatar_url,bio').eq('id', personId).maybeSingle(),
+        supabase.from('follows').select('followed_id').eq('follower_id', user.id).eq('followed_id', personId).maybeSingle(),
+        supabase.from('follows').select('follower_id', { count: 'exact', head: true }).eq('followed_id', personId),
+        supabase.from('follows').select('followed_id', { count: 'exact', head: true }).eq('follower_id', personId),
+        supabase.from('posts').select('id', { count: 'exact', head: true }).eq('user_id', personId)
+      ]);
+      if (p.error) throw p.error;
+      if (f.error) throw f.error;
+      if (fr.error) throw fr.error;
+      if (fg.error) throw fg.error;
+      if (posts.error) throw posts.error;
+      if (p.data) setProfile({ ...initial, ...p.data });
+      setFollowing(!!f.data); setFollowersCount(fr.count || 0); setFollowingCount(fg.count || 0); setPostCount(posts.count || 0);
+    } catch (error) { setNotice(`Could not load profile details: ${error.message || 'Please try again.'}`); }
+    finally { setBusy(false); }
+  }, [personId, user?.id]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const toggleFollow = async () => {
+    if (!personId || personId === user?.id || action) return;
+    setAction(true); setNotice('');
+    try {
+      const result = following
+        ? await supabase.from('follows').delete().eq('follower_id', user.id).eq('followed_id', personId)
+        : await supabase.from('follows').insert({ follower_id: user.id, followed_id: personId });
+      if (result.error) throw result.error;
+      setFollowing(!following); setFollowersCount(value => Math.max(0, value + (following ? -1 : 1)));
+    } catch (error) { setNotice(`Could not update follow: ${error.message || 'Please try again.'}`); }
+    finally { setAction(false); }
   };
 
-  const startChat = () => {
-    navigation.navigate('ChatConversation', {
-      contact,
-    });
+  const message = async () => {
+    if (!personId || !user?.id) return;
+    setAction(true); setNotice('');
+    try {
+      const chatId = await createDirectConversation(user.id, personId);
+      navigation.navigate('ChatConversation', { chatId, chatName: profile.full_name || (profile.username ? `@${profile.username}` : 'KONNEKT member') });
+    } catch (error) { setNotice(`Could not start a conversation: ${error.message || 'Please try again.'}`); }
+    finally { setAction(false); }
   };
 
-  const startCall = () => {
-    Alert.alert(
-      'Voice Call',
-      'Voice calling will be connected in a future update.'
-    );
+  const startCall = async callType => {
+    if (!personId || !user?.id || action) return;
+    setAction(true); setNotice('');
+    try {
+      const call = await createCall({ calleeId: personId, callType });
+      navigation.navigate('Call', { callId: call.id, callType, contact: { id: personId, name: profile.full_name || profile.username || 'KONNEKT member' } });
+    } catch (error) { setNotice(`Could not start call: ${error.message || 'Please try again.'}`); }
+    finally { setAction(false); }
   };
 
-  const openMoreOptions = () => {
-    Alert.alert(
-      'Contact Options',
-      'More contact options will be available in a future update.'
-    );
+  const block = () => {
+    if (!personId || personId === user?.id) return;
+    Alert.alert('Block this account?', 'This account will be prevented from starting new direct conversations with you.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Block account', style: 'destructive', onPress: async () => {
+        setAction(true); setNotice('');
+        try { await blockKonnektUser(personId); Alert.alert('Account blocked', 'The account has been added to your blocked list.', [{ text: 'OK', onPress: () => navigation.goBack() }]); }
+        catch (error) { setNotice(`Could not block this account: ${error.message || 'Please try again.'}`); }
+        finally { setAction(false); }
+      }}
+    ]);
   };
 
-  return (
-    <ScrollView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‹ Back</Text>
-        </TouchableOpacity>
+  const name = profile.full_name || profile.name || profile.username?.replace(/^@/, '') || 'KONNEKT member';
+  const username = profile.username ? (profile.username.startsWith('@') ? profile.username : `@${profile.username}`) : '@member';
+  const isMe = personId && personId === user?.id;
 
-        <Text style={styles.headerTitle}>Contact Profile</Text>
-
-        <TouchableOpacity onPress={openMoreOptions}>
-          <Text style={styles.moreButton}>•••</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.profileSection}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarText}>
-            {contact.initials ||
-              (contact.name || 'K').charAt(0).toUpperCase()}
-          </Text>
-        </View>
-
-        <Text style={styles.name}>
-          {contact.name || 'KONNEKT User'}
-        </Text>
-
-        <Text style={styles.username}>
-          {contact.username || '@user'}
-        </Text>
-
-        <Text style={styles.memberStatus}>
-          {contact.onKonnekt === false
-            ? 'Not yet on KONNEKT'
-            : 'KONNEKT Member'}
-        </Text>
-      </View>
-
-      <View style={styles.actionRow}>
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={startChat}
-        >
-          <Text style={styles.actionIcon}>💬</Text>
-          <Text style={styles.actionText}>Message</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.actionButton}
-          onPress={startCall}
-        >
-          <Text style={styles.actionIcon}>📞</Text>
-          <Text style={styles.actionText}>Call</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.infoCard}>
-        <Text style={styles.sectionTitle}>About</Text>
-        <Text style={styles.bio}>
-          {contact.bio || 'No bio added yet.'}
-        </Text>
-
-        <View style={styles.divider} />
-
-        <Text style={styles.infoLabel}>Phone number</Text>
-        <Text style={styles.infoValue}>
-          {contact.phone || 'Not available'}
-        </Text>
-
-        <View style={styles.divider} />
-
-        <Text style={styles.infoLabel}>Username</Text>
-        <Text style={styles.infoValue}>
-          {contact.username || 'Not available'}
-        </Text>
-      </View>
-
-      <View style={styles.infoCard}>
-        <Text style={styles.sectionTitle}>Shared Activity</Text>
-
-        <Text style={styles.activityText}>
-          Shared photos, videos, messages and other activity
-          will appear here when this feature is connected.
-        </Text>
-      </View>
-
-      <TouchableOpacity
-        style={styles.blockButton}
-        onPress={() =>
-          Alert.alert(
-            'Block Contact',
-            'Contact blocking and reporting will be implemented with account security.'
-          )
-        }
-      >
-        <Text style={styles.blockButtonText}>
-          Block or Report Contact
-        </Text>
-      </TouchableOpacity>
-
-      <Text style={styles.footer}>
-        Contact information is displayed according to account
-        privacy settings.
-      </Text>
-    </ScrollView>
-  );
+  return <ScrollView style={s.container} contentContainerStyle={s.content}>
+    <TouchableOpacity onPress={() => navigation.goBack()}><Text style={s.back}>‹ Back</Text></TouchableOpacity>
+    <View style={s.profileSection}>
+      {profile.avatar_url ? <Image source={{ uri: profile.avatar_url }} style={s.avatarImage}/> : <View style={s.avatar}><Text style={s.avatarText}>{(name || 'K').slice(0,1).toUpperCase()}</Text></View>}
+      <Text style={s.name}>{name}</Text><Text style={s.username}>{username}</Text><Text style={s.memberStatus}>KONNEKT Member</Text>
+      <View style={s.stats}><View style={s.stat}><Text style={s.statNum}>{postCount}</Text><Text style={s.statLabel}>Posts</Text></View><View style={s.stat}><Text style={s.statNum}>{followersCount}</Text><Text style={s.statLabel}>Followers</Text></View><View style={s.stat}><Text style={s.statNum}>{followingCount}</Text><Text style={s.statLabel}>Following</Text></View></View>
+    </View>
+    {!isMe && <View style={s.actionRow}>
+      <TouchableOpacity style={[s.followButton, following && s.followingButton]} onPress={toggleFollow} disabled={action}><Text style={s.followText}>{action ? 'Please wait…' : following ? 'Following · Unfollow' : '+ Follow'}</Text></TouchableOpacity>
+      <TouchableOpacity style={s.messageButton} onPress={message} disabled={action}><Text style={s.messageText}>Message</Text></TouchableOpacity>
+    </View>}
+    {!isMe && <View style={s.secondaryActions}><TouchableOpacity onPress={()=>startCall('voice')} disabled={action}><Text style={s.secondaryActionText}>Voice call</Text></TouchableOpacity><TouchableOpacity onPress={()=>startCall('video')} disabled={action}><Text style={s.secondaryActionText}>Video call</Text></TouchableOpacity></View>}
+    {!isMe && <View style={s.secondaryActions}><TouchableOpacity onPress={()=>navigation.navigate('ReportUser',{contact:{id:personId,name,username}})}><Text style={s.secondaryActionText}>Report account</Text></TouchableOpacity><TouchableOpacity onPress={block} disabled={action}><Text style={s.dangerActionText}>Block account</Text></TouchableOpacity></View>}
+    <View style={s.infoCard}><Text style={s.sectionTitle}>About</Text><Text style={s.bio}>{profile.bio || 'This member has not added a bio yet.'}</Text></View>
+    {busy && <ActivityIndicator color="#6A0DAD" style={{ marginTop: 16 }}/>} {!!notice && <Text style={s.notice}>{notice}</Text>}
+    <Text style={s.footer}>KONNEKT · Connecting people everywhere.</Text>
+  </ScrollView>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F5F7F8',
-  },
-  header: {
-    height: 60,
-    backgroundColor: '#FFFFFF',
-    paddingHorizontal: 16,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-  backButton: {
-    color: '#075E54',
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  headerTitle: {
-    color: '#17202A',
-    fontSize: 17,
-    fontWeight: 'bold',
-  },
-  moreButton: {
-    color: '#075E54',
-    fontSize: 20,
-    fontWeight: 'bold',
-  },
-  profileSection: {
-    alignItems: 'center',
-    paddingVertical: 30,
-    backgroundColor: '#FFFFFF',
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#D5F5E3',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  avatarText: {
-    color: '#075E54',
-    fontSize: 35,
-    fontWeight: 'bold',
-  },
-  name: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#17202A',
-    marginTop: 15,
-  },
-  username: {
-    color: '#075E54',
-    fontSize: 14,
-    marginTop: 5,
-  },
-  memberStatus: {
-    color: '#667085',
-    fontSize: 12,
-    marginTop: 8,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    padding: 18,
-    gap: 15,
-  },
-  actionButton: {
-    flex: 1,
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
-    padding: 16,
-    alignItems: 'center',
-  },
-  actionIcon: {
-    fontSize: 23,
-  },
-  actionText: {
-    color: '#075E54',
-    fontWeight: 'bold',
-    marginTop: 7,
-  },
-  infoCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: 16,
-    marginBottom: 14,
-    borderRadius: 12,
-    padding: 18,
-  },
-  sectionTitle: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#17202A',
-    marginBottom: 12,
-  },
-  bio: {
-    color: '#475467',
-    fontSize: 14,
-    lineHeight: 21,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#EEEEEE',
-    marginVertical: 14,
-  },
-  infoLabel: {
-    color: '#667085',
-    fontSize: 12,
-  },
-  infoValue: {
-    color: '#17202A',
-    fontSize: 14,
-    marginTop: 5,
-  },
-  activityText: {
-    color: '#667085',
-    fontSize: 13,
-    lineHeight: 20,
-  },
-  blockButton: {
-    marginHorizontal: 16,
-    backgroundColor: '#FCE8E6',
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-  },
-  blockButtonText: {
-    color: '#B42318',
-    fontWeight: 'bold',
-  },
-  footer: {
-    textAlign: 'center',
-    color: '#667085',
-    fontSize: 11,
-    padding: 18,
-  },
-});
+const s=StyleSheet.create({container:{flex:1,backgroundColor:'#10091B'},content:{padding:18,paddingBottom:35},back:{color:'#6A0DAD',fontSize:16,marginTop:12,marginBottom:18},profileSection:{backgroundColor:'#241630',borderRadius:18,padding:22,alignItems:'center'},avatar:{width:92,height:92,borderRadius:46,backgroundColor:'#1C3B5A',alignItems:'center',justifyContent:'center'},avatarImage:{width:92,height:92,borderRadius:46},avatarText:{color:'#FFF',fontSize:35,fontWeight:'bold'},name:{fontSize:22,fontWeight:'bold',color:'#FFF',marginTop:14},username:{color:'#D8B8F5',fontSize:14,marginTop:5},memberStatus:{color:'#BBA9CC',fontSize:11,marginTop:8},stats:{flexDirection:'row',justifyContent:'space-around',width:'100%',marginTop:22},stat:{alignItems:'center'},statNum:{color:'#FFF',fontSize:18,fontWeight:'bold'},statLabel:{color:'#BBA9CC',fontSize:10,marginTop:3},actionRow:{flexDirection:'row',gap:10,marginTop:15},followButton:{flex:1,backgroundColor:'#6A0DAD',padding:14,borderRadius:11,alignItems:'center'},followingButton:{backgroundColor:'#39244B',borderWidth:1,borderColor:'#54708E'},followText:{color:'#FFF',fontWeight:'bold'},messageButton:{flex:1,borderWidth:1,borderColor:'#6A0DAD',padding:14,borderRadius:11,alignItems:'center'},messageText:{color:'#D8B8F5',fontWeight:'bold'},infoCard:{backgroundColor:'#241630',borderRadius:14,padding:18,marginTop:15},sectionTitle:{color:'#FFF',fontWeight:'bold',fontSize:15},bio:{color:'#C2D1E1',lineHeight:21,marginTop:9},secondaryActions:{flexDirection:'row',justifyContent:'space-between',paddingHorizontal:4,marginTop:15},secondaryActionText:{color:'#D8B8F5',fontWeight:'700',fontSize:12},dangerActionText:{color:'#FF8795',fontWeight:'700',fontSize:12},notice:{color:'#FFB6C0',marginTop:14},footer:{color:'#65788F',textAlign:'center',marginTop:25,fontSize:11}});

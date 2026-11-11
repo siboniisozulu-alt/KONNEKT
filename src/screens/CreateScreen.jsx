@@ -72,7 +72,7 @@ export default function CreateScreen({ navigation }) {
       <TextInput
         style={styles.captionInput}
         placeholder="What would you like to share?"
-        placeholderTextColor="#8A99AD"
+        placeholderTextColor="#BBA9CC"
         value={caption}
         onChangeText={setCaption}
         multiline
@@ -102,7 +102,7 @@ export default function CreateScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07111F',
+    backgroundColor: '#10091B',
     padding: 20
   },
   title: {
@@ -112,13 +112,13 @@ const styles = StyleSheet.create({
     marginTop: 25
   },
   subtitle: {
-    color: '#8A99AD',
+    color: '#BBA9CC',
     fontSize: 14,
     marginTop: 8,
     marginBottom: 25
   },
   preview: {
-    backgroundColor: '#14243A',
+    backgroundColor: '#241630',
     borderRadius: 18,
     padding: 30,
     alignItems: 'center',
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     marginTop: 12
   },
   previewDescription: {
-    color: '#8A99AD',
+    color: '#BBA9CC',
     fontSize: 13,
     marginTop: 8
   },
@@ -154,9 +154,9 @@ const styles = StyleSheet.create({
   },
   typeCard: {
     width: '48%',
-    backgroundColor: '#14243A',
+    backgroundColor: '#241630',
     borderWidth: 1,
-    borderColor: '#263A53',
+    borderColor: '#39244B',
     borderRadius: 14,
     padding: 18,
     alignItems: 'center',
@@ -176,17 +176,17 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   captionInput: {
-    backgroundColor: '#14243A',
+    backgroundColor: '#241630',
     borderRadius: 12,
     borderWidth: 1,
-    borderColor: '#263A53',
+    borderColor: '#39244B',
     minHeight: 110,
     padding: 15,
     color: '#FFFFFF',
     textAlignVertical: 'top'
   },
   characterCount: {
-    color: '#8A99AD',
+    color: '#BBA9CC',
     textAlign: 'right',
     marginTop: 7,
     marginBottom: 20
@@ -198,12 +198,12 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   createButtonText: {
-    color: '#07111F',
+    color: '#10091B',
     fontSize: 16,
     fontWeight: 'bold'
   },
   footer: {
-    color: '#8A99AD',
+    color: '#BBA9CC',
     textAlign: 'center',
     marginTop: 25,
     marginBottom: 30

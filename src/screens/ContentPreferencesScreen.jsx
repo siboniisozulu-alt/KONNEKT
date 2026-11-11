@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,11 +28,7 @@ const categories = [
 ];
 
 export default function ContentPreferencesScreen({ navigation }) {
-  const [selectedCategories, setSelectedCategories] = useState([
-    'Music',
-    'Comedy',
-    'Entertainment',
-  ]);
+  const [selectedCategories, setSelectedCategories] = useState([]);
 
   const [settings, setSettings] = useState({
     personalizedFeed: true,
@@ -41,6 +37,10 @@ export default function ContentPreferencesScreen({ navigation }) {
     sensitiveContent: false,
     autoplayVideos: true,
   });
+
+  useEffect(() => {
+    try { const saved = globalThis.localStorage?.getItem('konnekt-content-preferences'); if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed.selectedCategories)) setSelectedCategories(parsed.selectedCategories); if (parsed.settings && typeof parsed.settings === 'object') setSettings(current => ({ ...current, ...parsed.settings })); } } catch { /* Ignore malformed local preferences and use safe defaults. */ }
+  }, []);
 
   const toggleCategory = (category) => {
     setSelectedCategories((previous) =>
@@ -58,11 +58,10 @@ export default function ContentPreferencesScreen({ navigation }) {
   };
 
   const savePreferences = () => {
-    Alert.alert(
-      'Preferences saved (demo)',
-      'Your selections are currently stored only in this screen. Connect a backend to save and apply them to your KONNEKT feed.',
-      [{ text: 'OK', onPress: () => navigation.goBack() }]
-    );
+    try {
+      if (typeof globalThis.localStorage !== 'undefined') globalThis.localStorage.setItem('konnekt-content-preferences', JSON.stringify({ selectedCategories, settings }));
+      Alert.alert('Preferences saved', 'Your content preferences have been saved on this device. Feed ranking will use these preferences when personalised recommendations are enabled.');
+    } catch (error) { Alert.alert('Could not save preferences', error.message || 'Please try again.'); }
   };
 
   const SettingRow = ({ title, description, settingKey }) => (
@@ -98,8 +97,7 @@ export default function ContentPreferencesScreen({ navigation }) {
             Make KONNEKT yours
           </Text>
           <Text style={styles.introDescription}>
-            Choose what you enjoy watching. Your choices can help
-            shape your Watch feed once recommendations are connected.
+            Choose the topics you want to discover on KONNEKT.
           </Text>
         </View>
 

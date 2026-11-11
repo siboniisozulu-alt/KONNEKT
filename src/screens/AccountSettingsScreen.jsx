@@ -32,7 +32,7 @@ export default function AccountSettingsScreen({ navigation }) {
       <Switch
         value={value}
         onValueChange={onValueChange}
-        trackColor={{ false: '#263A53', true: '#00A77C' }}
+        trackColor={{ false: '#39244B', true: '#00A77C' }}
         thumbColor={value ? '#00E5A8' : '#B8C4D4'}
       />
     </View>
@@ -111,7 +111,7 @@ export default function AccountSettingsScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07111F',
+    backgroundColor: '#10091B',
     padding: 20
   },
   header: {
@@ -136,7 +136,7 @@ const styles = StyleSheet.create({
     marginBottom: 12
   },
   settingItem: {
-    backgroundColor: '#14243A',
+    backgroundColor: '#241630',
     padding: 16,
     borderRadius: 12,
     marginBottom: 10,
@@ -154,7 +154,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   description: {
-    color: '#8A99AD',
+    color: '#BBA9CC',
     fontSize: 12,
     marginTop: 5
   },
@@ -163,7 +163,7 @@ const styles = StyleSheet.create({
     fontSize: 25
   },
   footer: {
-    color: '#8A99AD',
+    color: '#BBA9CC',
     textAlign: 'center',
     marginVertical: 30,
     fontSize: 12

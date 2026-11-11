@@ -1,352 +1,42 @@
-
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Alert,
-} from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert, ActivityIndicator } from 'react-native';
+import { useAuth } from '../AuthContext';
+import { supabase } from '../lib_supabase';
+import { uploadMedia } from '../services/media';
 
 export default function VoiceNoteScreen({ navigation, route }) {
-  const contact = route?.params?.contact || {
-    name: 'KONNEKT Contact',
+  const { user } = useAuth();
+  const conversationId = route?.params?.chatId;
+  const [recording,setRecording]=useState(false); const [seconds,setSeconds]=useState(0); const [audioUrl,setAudioUrl]=useState(''); const [saving,setSaving]=useState(false); const [notice,setNotice]=useState('');
+  const recorderRef=useRef(null); const streamRef=useRef(null); const chunksRef=useRef([]); const timerRef=useRef(null); const blobRef=useRef(null);
+  useEffect(()=>()=>{clearInterval(timerRef.current);streamRef.current?.getTracks?.().forEach(t=>t.stop());if(audioUrl)URL.revokeObjectURL(audioUrl);},[audioUrl]);
+  const start=async()=>{
+    setNotice('');setSeconds(0);setAudioUrl('');blobRef.current=null;
+    try{
+      if(!conversationId)throw new Error('Open voice notes from inside a conversation.');
+      if(!globalThis.navigator?.mediaDevices?.getUserMedia||!globalThis.MediaRecorder)throw new Error('Voice recording is not supported in this browser or device.');
+      const stream=await navigator.mediaDevices.getUserMedia({audio:true});streamRef.current=stream;chunksRef.current=[];
+      const recorder=new MediaRecorder(stream);recorderRef.current=recorder;
+      recorder.ondataavailable=e=>{if(e.data?.size)chunksRef.current.push(e.data);};
+      recorder.onstop=()=>{const blob=new Blob(chunksRef.current,{type:recorder.mimeType||'audio/webm'});blobRef.current=blob;const url=URL.createObjectURL(blob);setAudioUrl(url);stream.getTracks().forEach(t=>t.stop());streamRef.current=null;};
+      recorder.start(250);setRecording(true);timerRef.current=setInterval(()=>setSeconds(v=>v+1),1000);
+    }catch(e){setNotice(e.message||'Could not start microphone recording. Check microphone permission.');}
   };
-
-  const [recording, setRecording] = useState(false);
-  const [recorded, setRecorded] = useState(false);
-  const [seconds, setSeconds] = useState(0);
-  const [playing, setPlaying] = useState(false);
-
-  const timerRef = useRef(null);
-
-  useEffect(() => {
-    if (recording) {
-      timerRef.current = setInterval(() => {
-        setSeconds((previous) => previous + 1);
-      }, 1000);
-    } else {
-      clearInterval(timerRef.current);
-    }
-
-    return () => clearInterval(timerRef.current);
-  }, [recording]);
-
-  const formatTime = (value) => {
-    const minutes = Math.floor(value / 60);
-    const remaining = value % 60;
-
-    return (
-      `${String(minutes).padStart(2, '0')}:` +
-      `${String(remaining).padStart(2, '0')}`
-    );
+  const stop=()=>{clearInterval(timerRef.current);setRecording(false);if(recorderRef.current?.state==='recording')recorderRef.current.stop();};
+  const discard=()=>{setAudioUrl('');blobRef.current=null;setSeconds(0);setNotice('');};
+  const play=()=>{if(!audioUrl)return;try{const player=new Audio(audioUrl);player.play().catch(()=>setNotice('Audio playback could not start.'));}catch{setNotice('Audio playback is not supported on this device.');}};
+  const send=async()=>{
+    if(!blobRef.current||!conversationId||!user?.id)return setNotice('Record a voice note from an active conversation first.');
+    setSaving(true);setNotice('');
+    try{
+      const file=new File([blobRef.current],`voice-note-${Date.now()}.webm`,{type:blobRef.current.type||'audio/webm'});
+      const uploaded=await uploadMedia(file,'konnekt-chat-media',`${conversationId}/${user.id}`);
+      const {error}=await supabase.from('messages').insert({conversation_id:conversationId,sender_id:user.id,body:'Voice note',media_path:uploaded.path,media_type:'audio',media_mime_type:file.type});
+      if(error)throw error;
+      Alert.alert('Voice note sent','Your voice note has been sent.',[{text:'OK',onPress:()=>navigation.goBack()}]);
+    }catch(e){setNotice(e.message||'The voice note could not be sent.');}finally{setSaving(false);}
   };
-
-  const startRecording = () => {
-    setSeconds(0);
-    setRecorded(false);
-    setPlaying(false);
-    setRecording(true);
-  };
-
-  const stopRecording = () => {
-    setRecording(false);
-
-    if (seconds === 0) {
-      Alert.alert(
-        'Recording too short',
-        'Record a voice note before saving.'
-      );
-      return;
-    }
-
-    setRecorded(true);
-
-    Alert.alert(
-      'Demo recording',
-      'The recording interface has stopped. Actual audio recording still needs to be connected.'
-    );
-  };
-
-  const playRecording = () => {
-    setPlaying(!playing);
-
-    Alert.alert(
-      'Audio preview',
-      'Audio playback will be available when the recording service is connected.'
-    );
-  };
-
-  const sendRecording = () => {
-    if (!recorded) {
-      Alert.alert(
-        'No recording',
-        'Please record a voice note first.'
-      );
-      return;
-    }
-
-    Alert.alert(
-      'Voice note demo',
-      `Your ${formatTime(seconds)} voice note is ready to send. Actual audio upload is not connected yet.`,
-      [
-        {
-          text: 'OK',
-          onPress: () => navigation.goBack(),
-        },
-      ]
-    );
-  };
-
-  const deleteRecording = () => {
-    setRecording(false);
-    setRecorded(false);
-    setPlaying(false);
-    setSeconds(0);
-  };
-
-  return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backButton}>‹</Text>
-        </TouchableOpacity>
-
-        <View>
-          <Text style={styles.headerTitle}>Voice note</Text>
-          <Text style={styles.headerSubtitle}>
-            To {contact.name}
-          </Text>
-        </View>
-      </View>
-
-      <View style={styles.content}>
-        <View style={styles.microphoneCircle}>
-          <Text style={styles.microphoneIcon}>🎙️</Text>
-        </View>
-
-        <Text style={styles.title}>
-          {recording
-            ? 'Recording your message'
-            : recorded
-              ? 'Voice note recorded'
-              : 'Record a voice note'}
-        </Text>
-
-        <Text style={styles.description}>
-          {recording
-            ? 'Speak clearly into your microphone.'
-            : 'Press the microphone button to begin.'}
-        </Text>
-
-        <Text style={styles.timer}>
-          {formatTime(seconds)}
-        </Text>
-
-        <View style={styles.waveform}>
-          {Array.from({ length: 25 }).map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.waveBar,
-                {
-                  height:
-                    recorded || recording
-                      ? 10 + ((index * 17) % 35)
-                      : 8 + ((index * 7) % 12),
-                },
-              ]}
-            />
-          ))}
-        </View>
-
-        {recorded && (
-          <View style={styles.previewControls}>
-            <TouchableOpacity
-              style={styles.previewButton}
-              onPress={playRecording}
-            >
-              <Text style={styles.previewButtonText}>
-                {playing ? 'Pause preview' : 'Play preview'}
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              style={styles.deleteButton}
-              onPress={deleteRecording}
-            >
-              <Text style={styles.deleteButtonText}>
-                Delete
-              </Text>
-            </TouchableOpacity>
-          </View>
-        )}
-
-        <TouchableOpacity
-          style={[
-            styles.recordButton,
-            recording && styles.recordingButton,
-          ]}
-          onPress={recording ? stopRecording : startRecording}
-        >
-          <Text style={styles.recordButtonIcon}>
-            {recording ? '■' : '🎤'}
-          </Text>
-        </TouchableOpacity>
-
-        <Text style={styles.recordHint}>
-          {recording ? 'Tap to stop' : 'Tap to record'}
-        </Text>
-
-        {recorded && (
-          <TouchableOpacity
-            style={styles.sendButton}
-            onPress={sendRecording}
-          >
-            <Text style={styles.sendButtonText}>
-              Send voice note ➤
-            </Text>
-          </TouchableOpacity>
-        )}
-      </View>
-    </View>
-  );
+  const time=`${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
+  return <View style={s.page}><TouchableOpacity onPress={()=>navigation.goBack()}><Text style={s.back}>‹ Back</Text></TouchableOpacity><View style={s.center}><Text style={s.icon}>🎙</Text><Text style={s.title}>{recording?'Recording voice note':audioUrl?'Voice note ready':'Record a voice note'}</Text><Text style={s.sub}>{recording?'Speak clearly. Tap stop when finished.':'Use your device microphone to record an audio message.'}</Text><Text style={s.timer}>{time}</Text><View style={s.actions}>{!recording&&!audioUrl&&<TouchableOpacity style={s.primary} onPress={start}><Text style={s.primaryText}>Start recording</Text></TouchableOpacity>}{recording&&<TouchableOpacity style={[s.primary,s.stop]} onPress={stop}><Text style={s.primaryText}>Stop recording</Text></TouchableOpacity>}{!!audioUrl&&<><TouchableOpacity style={s.secondary} onPress={play}><Text style={s.secondaryText}>Play recording</Text></TouchableOpacity><TouchableOpacity style={s.secondary} onPress={discard}><Text style={s.secondaryText}>Discard</Text></TouchableOpacity><TouchableOpacity style={s.primary} disabled={saving} onPress={send}>{saving?<ActivityIndicator color="#FFF"/>:<Text style={s.primaryText}>Send voice note</Text>}</TouchableOpacity></>}</View>{!!notice&&<Text style={s.notice}>{notice}</Text>}</View></View>;
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#F7F9FA',
-  },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#075E54',
-    paddingHorizontal: 15,
-    paddingVertical: 17,
-  },
-  backButton: {
-    color: '#FFFFFF',
-    fontSize: 32,
-    marginRight: 15,
-  },
-  headerTitle: {
-    color: '#FFFFFF',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  headerSubtitle: {
-    color: '#D5EAE7',
-    fontSize: 12,
-    marginTop: 3,
-  },
-  content: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 22,
-  },
-  microphoneCircle: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: '#D5F5E3',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  microphoneIcon: {
-    fontSize: 45,
-  },
-  title: {
-    color: '#17202A',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginTop: 25,
-  },
-  description: {
-    color: '#667085',
-    fontSize: 12,
-    textAlign: 'center',
-    marginTop: 8,
-  },
-  timer: {
-    color: '#075E54',
-    fontSize: 35,
-    fontWeight: 'bold',
-    marginTop: 30,
-  },
-  waveform: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    height: 55,
-    marginTop: 20,
-  },
-  waveBar: {
-    width: 4,
-    borderRadius: 3,
-    backgroundColor: '#36A477',
-    marginHorizontal: 2,
-  },
-  previewControls: {
-    flexDirection: 'row',
-    marginTop: 20,
-  },
-  previewButton: {
-    backgroundColor: '#E5F4EC',
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    borderRadius: 20,
-    marginHorizontal: 5,
-  },
-  previewButtonText: {
-    color: '#075E54',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  deleteButton: {
-    backgroundColor: '#FCE8E6',
-    paddingHorizontal: 18,
-    paddingVertical: 11,
-    borderRadius: 20,
-    marginHorizontal: 5,
-  },
-  deleteButtonText: {
-    color: '#C62828',
-    fontSize: 12,
-    fontWeight: 'bold',
-  },
-  recordButton: {
-    width: 78,
-    height: 78,
-    borderRadius: 39,
-    backgroundColor: '#075E54',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: 35,
-  },
-  recordingButton: {
-    backgroundColor: '#D32F2F',
-  },
-  recordButtonIcon: {
-    color: '#FFFFFF',
-    fontSize: 28,
-  },
-  recordHint: {
-    color: '#667085',
-    fontSize: 12,
-    marginTop: 10,
-  },
-  sendButton: {
-    backgroundColor: '#075E54',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 25,
-    marginTop: 25,
-  },
-  sendButtonText: {
-    color: '#FFFFFF',
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-});
+const s=StyleSheet.create({page:{flex:1,backgroundColor:'#10091B',padding:18},back:{color:'#D8B8F5',fontSize:17,marginTop:12},center:{flex:1,alignItems:'center',justifyContent:'center',padding:18},icon:{fontSize:60,marginBottom:18},title:{color:'#FFF',fontSize:23,fontWeight:'800',textAlign:'center'},sub:{color:'#C4B4D0',textAlign:'center',lineHeight:20,marginTop:10,maxWidth:320},timer:{color:'#FFF',fontSize:34,fontWeight:'700',marginTop:25,fontVariant:['tabular-nums']},actions:{width:'100%',maxWidth:340,gap:10,marginTop:28},primary:{backgroundColor:'#6A0DAD',padding:15,borderRadius:12,alignItems:'center'},stop:{backgroundColor:'#D6455D'},primaryText:{color:'#FFF',fontWeight:'800'},secondary:{backgroundColor:'#172B43',padding:14,borderRadius:12,alignItems:'center',borderWidth:1,borderColor:'#503567'},secondaryText:{color:'#D9E8F8',fontWeight:'700'},notice:{color:'#FFB6C0',marginTop:18,textAlign:'center',lineHeight:19}});

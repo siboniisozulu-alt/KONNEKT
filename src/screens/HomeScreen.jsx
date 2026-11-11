@@ -83,7 +83,7 @@ function AlertPlaceholder() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#07111F',
+    backgroundColor: '#10091B',
     padding: 20
   },
   header: {
@@ -107,7 +107,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#14243A',
+    backgroundColor: '#241630',
     justifyContent: 'center',
     alignItems: 'center'
   },
@@ -115,7 +115,7 @@ const styles = StyleSheet.create({
     fontSize: 25
   },
   welcomeCard: {
-    backgroundColor: '#14243A',
+    backgroundColor: '#241630',
     borderRadius: 18,
     padding: 22,
     marginBottom: 30
@@ -144,7 +144,7 @@ const styles = StyleSheet.create({
   },
   actionCard: {
     width: '48%',
-    backgroundColor: '#14243A',
+    backgroundColor: '#241630',
     borderRadius: 15,
     padding: 17,
     marginBottom: 15
@@ -159,7 +159,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold'
   },
   actionDescription: {
-    color: '#8A99AD',
+    color: '#BBA9CC',
     fontSize: 12,
     marginTop: 6
   },

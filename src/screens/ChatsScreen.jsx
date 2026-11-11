@@ -69,11 +69,11 @@ export default function ChatsScreen({ navigation }) {
         value={search}
         onChangeText={setSearch}
         placeholder="Search your conversations"
-        placeholderTextColor="#8293A8"
+        placeholderTextColor="#BBA9CC"
       />
 
       {busy ? (
-        <ActivityIndicator color="#168BFF" style={{ marginTop: 35 }} />
+        <ActivityIndicator color="#6A0DAD" style={{ marginTop: 35 }} />
       ) : (
         <FlatList
           data={filtered}
@@ -99,27 +99,27 @@ export default function ChatsScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  container: { flex: 1, backgroundColor: '#07111F', padding: 18 },
+  container: { flex: 1, backgroundColor: '#10091B', padding: 18 },
   header: { marginTop: 22, marginBottom: 18, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   headerActions: { flexDirection: 'row', alignItems: 'center', gap: 9 },
   title: { color: '#FFF', fontSize: 28, fontWeight: 'bold' },
-  sub: { color: '#8293A8', marginTop: 4 },
-  add: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#168BFF', alignItems: 'center', justifyContent: 'center' },
+  sub: { color: '#BBA9CC', marginTop: 4 },
+  add: { width: 46, height: 46, borderRadius: 23, backgroundColor: '#6A0DAD', alignItems: 'center', justifyContent: 'center' },
   addText: { color: '#FFF', fontSize: 30 },
-  smallAction: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#203753', alignItems: 'center', justifyContent: 'center' },
+  smallAction: { width: 42, height: 42, borderRadius: 21, backgroundColor: '#30203F', alignItems: 'center', justifyContent: 'center' },
   smallActionText: { fontSize: 19 },
-  discoverButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#122944', borderWidth: 1, borderColor: '#168BFF', borderRadius: 15, padding: 15, marginBottom: 16, gap: 12 },
-  discoverIcon: { color: '#67B8FF', fontSize: 31, width: 32, textAlign: 'center' },
+  discoverButton: { flexDirection: 'row', alignItems: 'center', backgroundColor: '#30203F', borderWidth: 1, borderColor: '#6A0DAD', borderRadius: 15, padding: 15, marginBottom: 16, gap: 12 },
+  discoverIcon: { color: '#C9A7F4', fontSize: 31, width: 32, textAlign: 'center' },
   discoverTitle: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
-  discoverSub: { color: '#9AABC0', fontSize: 11, marginTop: 4 },
-  discoverArrow: { color: '#67B8FF', fontSize: 27 },
-  search: { backgroundColor: '#14243A', color: '#FFF', borderRadius: 12, padding: 14, marginBottom: 12 },
-  item: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderColor: '#263A53', gap: 12 },
-  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#182D49', alignItems: 'center', justifyContent: 'center' },
+  discoverSub: { color: '#C4B4D0', fontSize: 11, marginTop: 4 },
+  discoverArrow: { color: '#C9A7F4', fontSize: 27 },
+  search: { backgroundColor: '#241630', color: '#FFF', borderRadius: 12, padding: 14, marginBottom: 12 },
+  item: { flexDirection: 'row', alignItems: 'center', paddingVertical: 15, borderBottomWidth: 1, borderColor: '#39244B', gap: 12 },
+  avatar: { width: 48, height: 48, borderRadius: 24, backgroundColor: '#3A0CA3', alignItems: 'center', justifyContent: 'center' },
   avatarText: { fontSize: 23 },
   name: { color: '#FFF', fontWeight: 'bold', fontSize: 15 },
-  last: { color: '#9AABC0', marginTop: 5 },
-  time: { color: '#8293A8', fontSize: 10 },
-  empty: { color: '#9AABC0', textAlign: 'center', marginTop: 55, lineHeight: 22, paddingHorizontal: 12 },
+  last: { color: '#C4B4D0', marginTop: 5 },
+  time: { color: '#BBA9CC', fontSize: 10 },
+  empty: { color: '#C4B4D0', textAlign: 'center', marginTop: 55, lineHeight: 22, paddingHorizontal: 12 },
   error: { color: '#FF8795', padding: 10 }
 });

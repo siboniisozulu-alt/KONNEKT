@@ -99,7 +99,7 @@ const styles = StyleSheet.create({
     width: 85,
     height: 85,
     borderRadius: 25,
-    backgroundColor: '#168BFF',
+    backgroundColor: '#6A0DAD',
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -170,7 +170,7 @@ const styles = StyleSheet.create({
   },
 
   signup: {
-    backgroundColor: '#168BFF',
+    backgroundColor: '#6A0DAD',
     padding: 18,
     borderRadius: 13,
     alignItems: 'center',
@@ -185,7 +185,7 @@ const styles = StyleSheet.create({
 
   login: {
     borderWidth: 1.5,
-    borderColor: '#168BFF',
+    borderColor: '#6A0DAD',
     padding: 18,
     borderRadius: 13,
     alignItems: 'center',

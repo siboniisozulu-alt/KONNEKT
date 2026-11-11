@@ -117,14 +117,14 @@ export default function NewChatScreen({ navigation }) {
       <Text style={s.hint}>Find registered KONNEKT members by display name or username. Email addresses are never shown.</Text>
       <View style={s.searchRow}>
         <TextInput style={s.input} value={query} onChangeText={setQuery} onSubmitEditing={search}
-          placeholder="Search name or @username" placeholderTextColor="#8293A8" autoCapitalize="none" returnKeyType="search" />
+          placeholder="Search name or @username" placeholderTextColor="#BBA9CC" autoCapitalize="none" returnKeyType="search" />
         <TouchableOpacity style={s.button} onPress={search} disabled={busy}><Text style={s.buttonText}>Search</Text></TouchableOpacity>
       </View>
       <View style={s.listHeading}>
         <Text style={s.listTitle}>{hasSearched ? 'Search results' : 'KONNEKT members'}</Text>
         <TouchableOpacity onPress={clearSearch} disabled={busy}><Text style={s.refresh}>Refresh</Text></TouchableOpacity>
       </View>
-      {busy ? <ActivityIndicator color="#168BFF" style={{ marginTop: 28 }} /> : (
+      {busy ? <ActivityIndicator color="#6A0DAD" style={{ marginTop: 28 }} /> : (
         <FlatList data={results} keyExtractor={person => person.id} onRefresh={loadPeople} refreshing={busy}
           renderItem={({ item }) => (
             <TouchableOpacity style={s.person} onPress={() => open(item)} disabled={!!openingId}>
@@ -133,7 +133,7 @@ export default function NewChatScreen({ navigation }) {
                 <Text style={s.name}>{item.full_name || 'KONNEKT member'}</Text>
                 <Text style={s.username}>{item.username ? `@${item.username}` : 'Username not set'}</Text>
               </View>
-              {openingId === item.id ? <ActivityIndicator color="#168BFF" /> : <Text style={s.arrow}>Message ›</Text>}
+              {openingId === item.id ? <ActivityIndicator color="#6A0DAD" /> : <Text style={s.arrow}>Message ›</Text>}
             </TouchableOpacity>
           )}
           ListEmptyComponent={<Text style={s.empty}>No other accounts to show yet. Pull down to refresh after another member has registered and saved a profile.</Text>}
@@ -145,13 +145,13 @@ export default function NewChatScreen({ navigation }) {
 }
 
 const s = StyleSheet.create({
-  container:{flex:1,backgroundColor:'#07111F',padding:20}, back:{color:'#168BFF',fontSize:16,marginTop:20},
-  title:{color:'#FFF',fontSize:27,fontWeight:'bold',marginTop:22}, hint:{color:'#9AABC0',marginTop:8,marginBottom:20,lineHeight:20},
-  searchRow:{flexDirection:'row',gap:8}, input:{flex:1,backgroundColor:'#14243A',borderRadius:10,padding:13,color:'#FFF',borderWidth:1,borderColor:'#263A53'},
-  button:{backgroundColor:'#168BFF',borderRadius:10,paddingHorizontal:16,justifyContent:'center'},buttonText:{color:'#FFF',fontWeight:'bold'},
+  container:{flex:1,backgroundColor:'#10091B',padding:20}, back:{color:'#6A0DAD',fontSize:16,marginTop:20},
+  title:{color:'#FFF',fontSize:27,fontWeight:'bold',marginTop:22}, hint:{color:'#C4B4D0',marginTop:8,marginBottom:20,lineHeight:20},
+  searchRow:{flexDirection:'row',gap:8}, input:{flex:1,backgroundColor:'#241630',borderRadius:10,padding:13,color:'#FFF',borderWidth:1,borderColor:'#39244B'},
+  button:{backgroundColor:'#6A0DAD',borderRadius:10,paddingHorizontal:16,justifyContent:'center'},buttonText:{color:'#FFF',fontWeight:'bold'},
   listHeading:{flexDirection:'row',justifyContent:'space-between',alignItems:'center',marginTop:25,marginBottom:8},listTitle:{color:'#EAF4FF',fontWeight:'bold',fontSize:16},
-  refresh:{color:'#67B8FF',fontSize:13},person:{flexDirection:'row',alignItems:'center',paddingVertical:14,borderBottomWidth:1,borderColor:'#263A53',gap:12},
-  avatar:{width:44,height:44,borderRadius:22,backgroundColor:'#203753',alignItems:'center',justifyContent:'center'},avatarText:{color:'#FFF',fontSize:19,fontWeight:'bold'},
-  name:{color:'#FFF',fontWeight:'bold'},username:{color:'#8EA3BB',marginTop:4,fontSize:12},arrow:{color:'#67B8FF',fontWeight:'bold',fontSize:12},
-  empty:{color:'#9AABC0',textAlign:'center',marginTop:35,lineHeight:22},notice:{color:'#FFC0C8',marginTop:16,lineHeight:20}
+  refresh:{color:'#C9A7F4',fontSize:13},person:{flexDirection:'row',alignItems:'center',paddingVertical:14,borderBottomWidth:1,borderColor:'#39244B',gap:12},
+  avatar:{width:44,height:44,borderRadius:22,backgroundColor:'#30203F',alignItems:'center',justifyContent:'center'},avatarText:{color:'#FFF',fontSize:19,fontWeight:'bold'},
+  name:{color:'#FFF',fontWeight:'bold'},username:{color:'#8EA3BB',marginTop:4,fontSize:12},arrow:{color:'#C9A7F4',fontWeight:'bold',fontSize:12},
+  empty:{color:'#C4B4D0',textAlign:'center',marginTop:35,lineHeight:22},notice:{color:'#FFC0C8',marginTop:16,lineHeight:20}
 });

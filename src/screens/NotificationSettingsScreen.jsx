@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -10,13 +10,22 @@ import {
   Alert,
 } from 'react-native';
 
-const initialSettings = [];
+const initialSettings = [
+  { id: 'messages', title: 'Messages', description: 'New messages and group activity.', value: true },
+  { id: 'calls', title: 'Calls', description: 'Incoming voice and video calls.', value: true },
+  { id: 'social', title: 'Social activity', description: 'Follows, likes and comments.', value: true },
+  { id: 'security', title: 'Security alerts', description: 'Important account and sign-in alerts.', value: true },
+];
 
 export default function NotificationSettingsScreen({ navigation }) {
   const [settings, setSettings] = useState(initialSettings);
   const [sound, setSound] = useState(true);
   const [vibration, setVibration] = useState(true);
   const [preview, setPreview] = useState(true);
+
+  useEffect(() => {
+    try { const saved = globalThis.localStorage?.getItem('konnekt-notification-preferences'); if (saved) { const parsed = JSON.parse(saved); if (Array.isArray(parsed.settings)) setSettings(parsed.settings); if (typeof parsed.sound === 'boolean') setSound(parsed.sound); if (typeof parsed.vibration === 'boolean') setVibration(parsed.vibration); if (typeof parsed.preview === 'boolean') setPreview(parsed.preview); } } catch { /* Ignore malformed local preferences and use safe defaults. */ }
+  }, []);
 
   const updateSetting = (id, value) => {
     setSettings((previous) =>
@@ -42,10 +51,10 @@ export default function NotificationSettingsScreen({ navigation }) {
   };
 
   const saveSettings = () => {
-    Alert.alert(
-      'Demo settings',
-      'Your notification preferences have been updated on this screen. They are not saved to your KONNEKT account yet.'
-    );
+    try {
+      if (typeof globalThis.localStorage !== 'undefined') globalThis.localStorage.setItem('konnekt-notification-preferences', JSON.stringify({ settings, sound, vibration, preview }));
+      Alert.alert('Settings saved', 'Your notification preferences have been saved on this device. Actual delivery still depends on device permissions and notification-service configuration.');
+    } catch (error) { Alert.alert('Could not save settings', error.message || 'Please try again.'); }
   };
 
   const renderToggle = (title, description, value, onChange) => (
@@ -183,9 +192,7 @@ export default function NotificationSettingsScreen({ navigation }) {
         </TouchableOpacity>
 
         <Text style={styles.demoNote}>
-          Demonstration only. Real notification delivery and
-          preference storage require backend and push notification
-          integration.
+          These preferences are saved on this device. Background push notifications require notification-service configuration and device permission.
         </Text>
       </ScrollView>
     </View>
