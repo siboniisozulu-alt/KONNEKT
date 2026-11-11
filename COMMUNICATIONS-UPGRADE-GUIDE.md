@@ -28,7 +28,7 @@ In Supabase Dashboard → SQL Editor, open `supabase/migrations/20261107_communi
 
 ## Step 4 — calling infrastructure
 
-The migration and `src/services/calls.js` provide protected call records and realtime offer/answer/ICE signalling. A real call also requires a WebRTC media layer, microphone/camera permissions, incoming-call UI, lifecycle handling, and TURN credentials. STUN-only calls are not reliable across all mobile networks. Obtain a TURN service and keep its credentials out of source control before enabling public calling. The current CallScreen is still a demo UI; do not advertise calls as operational yet.
+The current revised package includes a WebRTC media layer, microphone/camera permissions, incoming-call prompts, call lifecycle handling and Supabase signalling. Reliable calling still requires an authenticated TURN credential endpoint and real-device testing across separate networks. The group-call mesh is limited to four participants; production scale requires an SFU. Do not advertise calls as production-ready until these tests pass.
 
 ## Step 5 — encryption safety
 

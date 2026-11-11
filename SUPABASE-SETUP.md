@@ -1,60 +1,62 @@
-# KONNEKT — Supabase social features setup
+# KONNEKT — existing Supabase project setup
 
-This project connects KONNEKT to the Supabase project configured in `src/lib_supabase.js`. It includes working application flows for one-to-one chat, chat attachments, 24-hour statuses, a shared photo/video posts feed with likes and comments, and in-app notifications. Live video transport and browser push notifications are not included yet; read the limitations below before announcing those features.
+This package preserves the Supabase project configured in `src/lib_supabase.js`. The project already has users, profiles and application data. **Do not create a replacement project, reset the database, drop tables, truncate records or rerun the initial schema as a reset.**
 
-## 1. Run the database and storage setup
+## 1. Apply only missing migrations
 
-1. Open https://supabase.com/dashboard and select your **KONNEKT** project.
-2. Open **SQL Editor** → **New query**.
-3. Open `supabase/konnekt_schema.sql` from this project and copy the entire file into the SQL Editor.
-4. Click **Run** and confirm it completes without errors.
-5. The script creates/updates the database tables, Row Level Security policies, media buckets, storage policies, notification triggers and Realtime publication entries. It is designed to be re-run safely.
+1. Open the existing KONNEKT project in the Supabase dashboard.
+2. Review the SQL migrations in `supabase/migrations` in filename order.
+3. Compare them with the migrations already applied to this project.
+4. Apply only migrations that are missing, one at a time, beginning with the earliest missing migration.
+5. Review the new `20261109_konnekt_realtime_and_call_readiness.sql` migration. It is additive: it adds group description support, group invitation notifications, realtime publication entries and a block-aware call guard.
+6. Do not run `supabase/konnekt_schema.sql` against the existing production project as a reset. It is retained as the initial schema reference for a genuinely new project.
 
-Do not disable Row Level Security. Do not put a database password or `service_role` secret in the website.
+Do not disable Row Level Security. Never place a database password or `service_role` secret in the website.
 
-## 2. Configure email authentication
+## 2. Configure authentication
 
 1. In Supabase open **Authentication** → **URL Configuration**.
 2. Set Site URL to `https://siboniisozulu-alt.github.io/KONNEKT/`.
 3. Add Redirect URL `https://siboniisozulu-alt.github.io/KONNEKT/**`.
-4. Under **Authentication** → **Providers** → **Email**, keep Email enabled. If email confirmation is enabled, users must click the confirmation email before logging in.
+4. Under **Authentication** → **Providers** → **Email**, keep Email enabled. If email confirmation is enabled, users must confirm their email before logging in.
+5. To use phone verification, configure Supabase phone authentication and a supported SMS provider. The app uses Supabase Auth phone-number change verification.
+6. TOTP two-step verification uses Supabase Auth MFA. Configure any required project-level MFA policy and enforce higher-assurance sessions on protected routes before public launch.
 
-## 3. Deploy to GitHub Pages
+## 3. Configure calls and push
 
-The Supabase Project URL and publishable browser key are set in `src/lib_supabase.js`. A publishable key is intended to be visible in browser code; security depends on the RLS and Storage policies. Never use a `service_role` key here.
+- One-to-one voice/video calls use browser WebRTC and Supabase signalling. Group calls use a peer-to-peer mesh limited to four participants.
+- Configure an authenticated TURN credentials endpoint and set `VITE_TURN_CREDENTIALS_URL` in the deployment environment. The endpoint must validate the Supabase access token and return short-lived ICE credentials. Do not place permanent TURN credentials in Vite variables or client code.
+- Background push requires OneSignal/FCM setup, Android package registration and device testing. Set `VITE_ONESIGNAL_APP_ID` only after provider setup. Never commit FCM service-account JSON or OneSignal REST API keys.
 
-Upload the extracted contents of this project to the existing `KONNEKT` repository, replacing matching project files. Do not upload the ZIP as a single file. Wait for the GitHub Actions workflow to finish successfully.
+## 4. Deploy to GitHub Pages
 
-## 4. Test with two separate accounts
+The Supabase project URL and publishable browser key are set in `src/lib_supabase.js`. A publishable key is intended to be visible in browser code; security depends on correctly configured RLS and Storage policies. Never use a `service_role` key here.
 
-Use two email addresses you can access, preferably in two different browsers or one normal and one private window.
+Upload the extracted project contents to the existing `KONNEKT` repository, replacing matching project files. Do not upload the ZIP as a single file. Wait for the GitHub Actions workflow to finish successfully.
 
-1. Register and confirm both accounts.
-2. In each account, save a distinct username in Profile.
-3. From account A, open Chats → +, search account B's username and start a conversation.
-4. Send text in both directions and confirm new messages appear without refreshing.
-5. Attach an image, video or audio file in the conversation and verify the other account can open it.
-6. Publish a status from one account and view it from the other. It should expire after 24 hours.
-7. Publish a photo or video in Reels; test likes and comments from the other account.
-8. Open Profile → Notifications and verify in-app notifications appear for messages, likes, comments and follows.
+## 5. Test with two separate accounts
 
-## 5. Feature boundaries — read before launch
+1. Register and confirm two accounts.
+2. Save a distinct username in each profile.
+3. Open Chats, search for the other member and start a direct conversation.
+4. Send text in both directions and confirm messages update without refreshing.
+5. Attach image, video, audio and supported document files.
+6. Record, play and send a voice note; verify the other account can play it.
+7. Create a group, confirm invited members receive in-app notifications, then test group messaging.
+8. Place and answer voice/video calls on two devices. Test separate Wi-Fi/mobile networks with TURN configured.
+9. Test group calling with up to four participants.
+10. Publish a status and a Reel; test viewing, likes and comments.
+11. Test reporting and blocking; verify blocked accounts cannot start new direct chats or calls.
 
-### Connected in this code package
+## 6. Important feature boundaries
 
-- One-to-one private messaging with Supabase Realtime while users are online.
-- Chat attachment uploads for images, videos and audio files. The app does not yet provide a polished in-app voice recorder; users can attach a supported audio file.
-- 24-hour text/photo/video statuses.
-- A shared posts/Reels feed with photo/video uploads, likes and comments. This is a functional feed, not yet a highly optimised TikTok-style full-screen recommendation algorithm.
-- In-app notifications for messages, likes, comments and follows. These update while the app is open.
+- Live room metadata and chat are available, but live video broadcasting still requires a streaming provider or SFU.
+- Background push when the app is closed requires provider and device configuration.
+- Ordinary chat messages are not end-to-end encrypted. They are protected by authenticated access and RLS, not E2EE.
+- Group calls are peer-to-peer mesh and limited to four participants; a media SFU is required for larger groups.
+- Creator verification, subscriptions, monetisation, payouts and brand campaigns are not active.
+- Terms and privacy documents remain drafts and require completion and legal review.
 
-### Not yet complete
+## 7. Free-plan considerations
 
-- Live video broadcasting. Supabase stores live-room metadata and chat data but does not itself transport live video. A WebRTC/SFU or streaming provider, signalling, TURN infrastructure, moderation and load testing are still required. The current live screens are not a real broadcast service; do not advertise Go Live as operational.
-- Browser push notifications when the website is closed. In-app notifications work while signed in and connected; background push needs service-worker/push subscription handling and a trusted server-side sender.
-- End-to-end encryption for messages. Messages are protected by authenticated access and RLS, but they are not end-to-end encrypted.
-- Production readiness at scale, full abuse moderation, content reporting workflows, backups and independent security testing.
-
-## 6. Free-plan considerations
-
-This setup does not require Firebase Blaze, paid SMS, online payments or a Supabase service-role key. Supabase Free has quotas and may pause inactive projects. Video storage and bandwidth can use the free allowance quickly. Check the current Supabase dashboard usage before inviting many users. Do not promise unlimited free video hosting or free global live streaming.
+This setup does not require Firebase Blaze, online payments or a Supabase service-role key. Supabase Free has quotas and may pause inactive projects. Video storage and bandwidth can use the free allowance quickly. Check current dashboard usage before inviting many users. Do not promise unlimited free video hosting, background push or global live streaming.

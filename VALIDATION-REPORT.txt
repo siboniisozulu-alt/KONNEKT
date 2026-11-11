@@ -1,15 +1,42 @@
-KONNEKT all-stages upgrade — package validation report
+KONNEKT revised development package validation
 Date: 2026-11-09
 
-PASS
-- 97 JavaScript/JSX files parsed with the installed TypeScript JSX parser; zero syntax errors.
-- Previously recovered static import/path inspection is retained from the source archive validation notes.
-- ZIP source archive integrity will be checked after packaging.
+Source package:
+- Recovered the saved all-five-stages archive and merged the later communications upgrade.
+- Preserved the existing Supabase project URL and public publishable key.
+- Added Supabase-backed group creation and group invitations.
+- Added one-to-one WebRTC call media/signalling, incoming-call prompts and call lifecycle handling.
+- Added group-call invitations and entry from group conversations (peer-to-peer mesh, max four participants).
+- Added authenticated short-lived TURN credential retrieval via VITE_TURN_CREDENTIALS_URL.
+- Added in-app voice-note recording, playback, upload and message delivery where MediaRecorder is supported.
+- Added supported document attachments in conversations.
+- Connected user/content reports, block/unblock and blocked-account listing to Supabase.
+- Added Supabase Auth phone-number verification and TOTP MFA enrolment/verification screens.
+- Replaced fictional creator profile, earnings and payout data with real empty/unavailable states.
+- Added device-local persistence for content and notification preferences.
+- Added additive migration 20261109_konnekt_realtime_and_call_readiness.sql.
 
-NOT VERIFIED
-- `npm install` timed out in the available environment; `npm run build` was not run successfully. Run both in GitHub Actions or a local development environment.
-- Supabase migrations were not executed against the user's live project.
-- No physical Android phones were available for camera, microphone, calls, notifications, performance or upgrade testing.
-- TURN, OneSignal/FCM, signed release keystore, payment provider, legal review and moderator staffing require external setup.
+Static validation:
+- TypeScript JSX parser: 98 JS/JSX files parsed; zero syntax parse errors.
+- Relative import scan: zero missing relative imports.
+- Literal navigation target scan: zero unresolved targets.
+- package.json: valid JSON.
+- Migration inventory: five SQL migration files.
+- Environment files: only .env.example included; no .env file or node_modules included.
+- Full Vite production build: NOT VERIFIED. npm dependency installation timed out in this environment.
+- SQL migrations: NOT RUN against the live Supabase project.
+- WebRTC, MFA, SMS, media recording, RLS and group invitation workflows: require real account/device integration testing.
 
-This is a beta preparation source package, not a certified production release. See KONNEKT-BETA-1.0-95-PERCENT-PACKAGE-NOTES.md.
+External configuration still required:
+- Apply only missing additive Supabase migrations in order; do not reset the project.
+- Configure authenticated short-lived TURN credential endpoint (VITE_TURN_CREDENTIALS_URL).
+- Configure Supabase SMS provider for phone verification.
+- Configure OneSignal/FCM for background push.
+- Connect live streaming provider/SFU before advertising live video broadcast.
+- Integrate and security-test end-to-end encryption before advertising E2EE.
+- Complete creator payment/verification integrations and legal review before enabling those services.
+
+Safety:
+- Do not reset Supabase or delete existing user data.
+- Do not expose service-role credentials or permanent TURN credentials in client code.
+- Do not commit .env or provider secret files.
