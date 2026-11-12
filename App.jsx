@@ -12,10 +12,6 @@ import {
 import { supabase } from './src/lib_supabase';
 import './src/konnekt-theme.css';
 
-/*
- * One navigation system for the whole KONNEKT web app.
- * Every screen containing JSX uses the .jsx extension for reliable Vite parsing.
- */
 const discoveredScreens = import.meta.glob('./src/screens/*.jsx', {
   eager: true,
   import: 'default'
@@ -101,28 +97,14 @@ function AppShell() {
     return () => { active = false; supabase.removeChannel(channel); };
   }, [user?.id]);
 
-  const currentRoute = stack[stack.length - 1] || {
-    name: 'Welcome',
-    params: {}
-  };
+  const currentRoute = stack[stack.length - 1] || { name: 'Welcome', params: {} };
 
-  const navigate = useCallback((name, params = {}) => {
-    setStack(previous => [...previous, { name, params }]);
-  }, []);
-  const goBack = useCallback(() => {
-    setStack(previous => previous.length > 1 ? previous.slice(0, -1) : previous);
-  }, []);
-  const replace = useCallback((name, params = {}) => {
-    setStack(previous => [...previous.slice(0, -1), { name, params }]);
-  }, []);
-  const navigation = useMemo(() => ({
-    navigate, goBack, replace,
-    getParam: name => currentRoute.params?.[name]
-  }), [navigate, goBack, replace, currentRoute.params]);
+  const navigate = useCallback((name, params = {}) => { setStack(previous => [...previous, { name, params }]); }, []);
+  const goBack = useCallback(() => { setStack(previous => previous.length > 1 ? previous.slice(0, -1) : previous); }, []);
+  const replace = useCallback((name, params = {}) => { setStack(previous => [...previous.slice(0, -1), { name, params }]); }, []);
+  const navigation = useMemo(() => ({ navigate, goBack, replace, getParam: name => currentRoute.params?.[name] }), [navigate, goBack, replace, currentRoute.params]);
 
-  const openTab = useCallback(name => {
-    setStack([{ name, params: {} }]);
-  }, []);
+  const openTab = useCallback(name => { setStack([{ name, params: {} }]); }, []);
 
   const screenKey = routeAliases[currentRoute.name] || currentRoute.name;
   const ActiveScreen = screenRegistry[screenKey];
@@ -137,13 +119,15 @@ function AppShell() {
   return (
     <SafeAreaView className={lightMode ? 'konnekt-light' : 'konnekt-dark'} style={[styles.container, lightMode && styles.lightContainer]} testID="konnekt-app-shell">
       <StatusBar backgroundColor={lightMode ? '#F7F3FC' : '#10091B'} barStyle={lightMode ? 'dark-content' : 'light-content'} />
-      {isMainTab && session && <View style={styles.brandBar}>
-        <View style={styles.brandMark}><Text style={styles.brandMarkText}>K</Text></View>
-        <View style={styles.brandCopy}><Text style={styles.brandName}>KONNEKT</Text><Text style={styles.brandTagline}>Connecting people everywhere.</Text></View>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel={lightMode ? 'Switch to dark mode' : 'Switch to light mode'} style={styles.themeToggle} onPress={() => setLightMode(value => !value)}>
-          <Text style={styles.themeToggleText}>{lightMode ? '☾' : '☀'}</Text>
-        </TouchableOpacity>
-      </View>}
+      {isMainTab && session && (
+        <View style={styles.brandBar}>
+          <View style={styles.brandMark}><Text style={styles.brandMarkText}>K</Text></View>
+          <View style={styles.brandCopy}><Text style={styles.brandName}>KONNEKT</Text><Text style={styles.brandTagline}>Connecting people everywhere.</Text></View>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={lightMode ? 'Switch to dark mode' : 'Switch to light mode'} style={styles.themeToggle} onPress={() => setLightMode(value => !value)}>
+            <Text style={styles.themeToggleText}>{lightMode ? '☾' : '☀'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <View style={styles.screen}>
         {ActiveScreen ? (
           <ActiveScreen
@@ -199,29 +183,9 @@ const styles = StyleSheet.create({
   themeToggle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#30203F', alignItems: 'center', justifyContent: 'center' },
   themeToggleText: { color: '#FFC107', fontSize: 21 },
   screen: { flex: 1, minHeight: 0 },
-  tabBar: {
-    minHeight: 68,
-    flexDirection: 'row',
-    backgroundColor: '#170D26',
-    borderTopWidth: 1,
-    borderTopColor: '#39244B',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingBottom: 6,
-    paddingTop: 4
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 58,
-    paddingHorizontal: 2,
-    borderTopWidth: 2,
-    borderTopColor: 'transparent'
-  },
-  activeTab: {
-    borderTopColor: '#FF6B00'
-  },
+  tabBar: { minHeight: 68, flexDirection: 'row', backgroundColor: '#170D26', borderTopWidth: 1, borderTopColor: '#39244B', justifyContent: 'space-around', alignItems: 'center', paddingBottom: 6, paddingTop: 4 },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 58, paddingHorizontal: 2, borderTopWidth: 2, borderTopColor: 'transparent' },
+  activeTab: { borderTopColor: '#FF6B00' },
   tabIcon: { color: '#A998B8', fontSize: 18, marginBottom: 2 },
   activeTabIcon: { color: '#FFC107' },
   tabLabel: { color: '#A998B8', fontSize: 9, fontWeight: '600' },
