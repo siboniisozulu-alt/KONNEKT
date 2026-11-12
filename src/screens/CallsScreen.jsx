@@ -19,18 +19,23 @@ export default function CallsScreen({ navigation }) {
     if (!user?.id) { setBusy(false); return; }
     setBusy(true);
     setNotice('');
+
     try {
       const { data: calls, error } = await supabase.from('call_sessions').select('id,caller_id,callee_id,call_type,status,created_at,ended_at')
         .or(`caller_id.eq.${user.id},callee_id.eq.${user.id}`).order('created_at', { ascending: false }).limit(40);
+
       if (error) throw error;
+
       const rows = calls || [];
       const ids = [...new Set(rows.map(row => row.caller_id === user.id ? row.callee_id : row.caller_id).filter(Boolean))];
       const [profileResult, peopleResult] = await Promise.all([
         ids.length ? supabase.from('profiles').select(profileColumns).in('id', ids) : Promise.resolve({ data: [], error: null }),
         supabase.from('profiles').select(profileColumns).neq('id', user.id).order('full_name', { ascending: true }).limit(100)
       ]);
+
       if (profileResult.error) throw profileResult.error;
       if (peopleResult.error) throw peopleResult.error;
+
       const profiles = Object.fromEntries((profileResult.data || []).map(profile => [profile.id, profile]));
       setHistory(rows.map(row => ({ ...row, contact: profiles[row.caller_id === user.id ? row.callee_id : row.caller_id] || {} })));
       setPeople(peopleResult.data || []);
@@ -75,16 +80,18 @@ export default function CallsScreen({ navigation }) {
   const renderHistory = ({ item }) => {
     const incoming = item.callee_id === user?.id;
     const date = item.created_at ? new Date(item.created_at).toLocaleString([], { dateStyle: 'medium', timeStyle: 'short' }) : '';
-    return <View style={s.historyRow}>
-      <View style={[s.callIcon, item.status === 'missed' && s.missedIcon]}><Text style={s.callGlyph}>{item.call_type === 'video' ? '▣' : '☎'}</Text></View>
-      <View style={s.historyCopy}>
-        <Text style={s.personName} numberOfLines={1}>{personName(item.contact)}</Text>
-        <Text style={s.meta}>{incoming ? 'Incoming' : 'Outgoing'} · {statusLabel(item.status)} · {date}</Text>
+    return (
+      <View style={s.historyRow}>
+        <View style={[s.callIcon, item.status === 'missed' && s.missedIcon]}><Text style={s.callGlyph}>{item.call_type === 'video' ? '▣' : '☎'}</Text></View>
+        <View style={s.historyCopy}>
+          <Text style={s.personName} numberOfLines={1}>{personName(item.contact)}</Text>
+          <Text style={s.meta}>{incoming ? 'Incoming' : 'Outgoing'} · {statusLabel(item.status)} · {date}</Text>
+        </View>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Call ${personName(item.contact)} again`} style={s.redial} disabled={!!starting || !item.contact.id} onPress={() => callAgain(item)}>
+          <Text style={s.redialText}>↻</Text>
+        </TouchableOpacity>
       </View>
-      <TouchableOpacity accessibilityRole="button" accessibilityLabel={`Call ${personName(item.contact)} again`} style={s.redial} disabled={!!starting || !item.contact.id} onPress={() => callAgain(item)}>
-        <Text style={s.redialText}>↻</Text>
-      </TouchableOpacity>
-    </View>;
+    );
   };
 
   const renderPerson = ({ item }) => (
@@ -100,34 +107,40 @@ export default function CallsScreen({ navigation }) {
     </View>
   );
 
-  return <View style={s.page}>
-    <View style={s.header}>
-      <View><Text style={s.title}>Calls</Text><Text style={s.subtitle}>Voice and video conversations</Text></View>
-      <TouchableOpacity accessibilityRole="button" accessibilityLabel="Refresh calls" style={s.refresh} onPress={load}><Text style={s.refreshText}>↻</Text></TouchableOpacity>
+  return (
+    <View style={s.page}>
+      <View style={s.header}>
+        <View><Text style={s.title}>Calls</Text><Text style={s.subtitle}>Voice and video conversations</Text></View>
+        <TouchableOpacity accessibilityRole="button" accessibilityLabel="Refresh calls" style={s.refresh} onPress={load}>
+          <Text style={s.refreshText}>↻</Text>
+        </TouchableOpacity>
+      </View>
+      {!!notice && <Text accessibilityRole="alert" style={s.notice}>{notice}</Text>}
+      <Text style={s.section}>Recent calls</Text>
+      {busy && !history.length ? <ActivityIndicator color="#FFC107" style={s.loading} /> : (
+        <FlatList
+          data={history}
+          keyExtractor={item => item.id}
+          renderItem={renderHistory}
+          style={s.historyList}
+          onRefresh={load}
+          refreshing={busy}
+          ListEmptyComponent={<Text style={s.empty}>Your call history will appear here after you connect with someone.</Text>}
+        />
+      )}
+      <Text style={s.section}>Start a call</Text>
+      <TextInput value={query} onChangeText={setQuery} style={s.search} placeholder="Search people by name or username" placeholderTextColor="#C4B4D0" accessibilityLabel="Search people to call" autoCapitalize="none" returnKeyType="search" />
+      <FlatList
+        data={filteredPeople}
+        keyExtractor={item => item.id}
+        renderItem={renderPerson}
+        style={s.peopleList}
+        keyboardShouldPersistTaps="handled"
+        ListEmptyComponent={<Text style={s.empty}>{query.trim() ? 'No matching people found.' : 'No other KONNEKT members are available yet.'}</Text>}
+      />
+      <Text style={s.footnote}>Calls need microphone access; video calls also need camera access. Reliable connections may require TURN configuration.</Text>
     </View>
-    {!!notice && <Text accessibilityRole="alert" style={s.notice}>{notice}</Text>}
-    <Text style={s.section}>Recent calls</Text>
-    {busy && !history.length ? <ActivityIndicator color="#FFC107" style={s.loading} /> : <FlatList
-      data={history}
-      keyExtractor={item => item.id}
-      renderItem={renderHistory}
-      style={s.historyList}
-      onRefresh={load}
-      refreshing={busy}
-      ListEmptyComponent={<Text style={s.empty}>Your call history will appear here after you connect with someone.</Text>}
-    />}
-    <Text style={s.section}>Start a call</Text>
-    <TextInput value={query} onChangeText={setQuery} style={s.search} placeholder="Search people by name or username" placeholderTextColor="#C4B4D0" accessibilityLabel="Search people to call" autoCapitalize="none" returnKeyType="search" />
-    <FlatList
-      data={filteredPeople}
-      keyExtractor={item => item.id}
-      renderItem={renderPerson}
-      style={s.peopleList}
-      keyboardShouldPersistTaps="handled"
-      ListEmptyComponent={<Text style={s.empty}>{query.trim() ? 'No matching people found.' : 'No other KONNEKT members are available yet.'}</Text>}
-    />
-    <Text style={s.footnote}>Calls need microphone access; video calls also need camera access. Reliable connections may require TURN configuration.</Text>
-  </View>;
+  );
 }
 
 const s = StyleSheet.create({
@@ -163,3 +176,60 @@ const s = StyleSheet.create({
   notice: { color: '#FFD0B5', backgroundColor: 'rgba(255,107,0,.12)', padding: 10, borderRadius: 9, marginBottom: 8 },
   footnote: { color: '#A998B8', fontSize: 10, lineHeight: 15, textAlign: 'center', paddingVertical: 7 }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
