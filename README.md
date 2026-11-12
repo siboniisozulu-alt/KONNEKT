@@ -2,48 +2,50 @@
 
 **KONNEKT — Connecting people everywhere.**
 
-This is the revised KONNEKT application source. It keeps the existing Supabase project configuration and uses additive database migrations. It does not include sample accounts, fake conversations, fictional earnings, or seeded social posts.
+This repository is the existing React 18/Vite application with React Native Web screens, Supabase authentication/data/storage/realtime and Capacitor Android support. Upgrade work preserves the existing project and adds no database reset, account removal or service-role key.
 
-## Application capabilities in this package
+## Current application capabilities
 
 - Supabase email/password authentication and profile persistence.
-- One-to-one conversations and realtime message updates.
-- Group creation using real member profiles and Supabase conversation records.
-- Image, video and audio attachments in chats.
-- In-app voice-note recording, playback and upload where browser microphone recording is supported.
-- One-to-one WebRTC voice/video call signalling and media transport.
-- Small peer-to-peer group calls (maximum four participants); production scale requires an SFU.
-- Realtime call invitations while the app is open.
-- 24-hour text/photo/video status publishing and viewing.
-- Shared photo/video posts with likes and comments.
-- In-app realtime notifications.
-- Report submission, user blocking and blocked-account management backed by Supabase.
-- Local device preferences for content and notifications.
-- Row Level Security and storage policies in the existing schema and migrations.
+- One-to-one conversations, group conversations and realtime message updates.
+- Image, video and audio attachments in chats; voice note recording where browser support permits.
+- One-to-one WebRTC voice/video call signalling and media transport; small peer-to-peer group calls have a four-person limit.
+- Status updates with 24-hour expiry and photo/video upload paths.
+- Supabase-backed posts/Reels, likes, comments, follows, user discovery and notifications.
+- User blocking/reporting, moderation screens and local content/notification preferences.
+- Six main navigation destinations in order: Chats, Updates, Reels, Calls, Discover, Profile.
 
-## External configuration still required
+These features depend on correct Supabase schema, RLS, storage and deployment configuration. A screen or signalling record is not proof of a successful real-world call or push delivery.
 
-- Apply the additive SQL migrations in `supabase/migrations` in chronological order. Do not reset the project or rerun the original schema as a reset.
-- Configure a TURN relay for dependable calls across mobile networks and restrictive firewalls. Set `VITE_TURN_URLS`, `VITE_TURN_USERNAME` and `VITE_TURN_CREDENTIAL` in the deployment environment.
-- Configure OneSignal for background push notifications. In-app notifications and incoming call prompts work while the app is open.
-- Live video broadcasting requires a streaming provider or SFU; a local camera preview is not a broadcast.
-- End-to-end encryption is not yet enabled for ordinary messages. Do not advertise chats as end-to-end encrypted.
-- Creator verification, creator subscriptions, earnings, payouts and brand campaigns are not active. The package does not show fictional balances or pretend applications were submitted.
-- Legal terms and privacy materials remain drafts and require legal review and completion before public launch.
+## KONNEKT 2.0 brand and release updates
+
+- Shared theme tokens now follow the requested Royal Purple `#6A0DAD`, Solar Gold `#FFC107`, Sunset Orange `#FF6B00`, Electric Indigo `#3A0CA3` and Neo Cyan `#00E6FF` palette.
+- Updated browser theme metadata, PWA manifest theme colour/icon paths and Android launcher background colour without replacing existing app assets or Capacitor configuration.
+- Added a controlled testing checklist at `docs/REAL-WORLD-TESTING-RELEASE.md`.
+- The tab destinations already existed in the inspected app shell and were retained rather than rebuilding the app.
+
+## External configuration and release limitations
+
+- Review and apply only pending additive SQL migrations in order. Never reset the Supabase project or rerun the original schema as a production reset.
+- Configure a secure TURN credential endpoint for reliable calls. Set `VITE_TURN_CREDENTIALS_URL` to an endpoint issuing short-lived credentials; never ship permanent TURN credentials in browser variables.
+- Configure OneSignal/FCM for background push. In-app notifications and call prompts while the app is open are not background push.
+- Live video broadcasting needs a streaming provider/SFU; a local camera preview is not a broadcast.
+- Ordinary messages are not end-to-end encrypted. Do not claim that they are.
+- Creator verification, subscriptions, earnings, payouts and brand campaigns must not be presented as active unless their real backend workflows are configured.
+- Legal terms and privacy materials remain drafts that require review before public launch.
 
 ## Build
 
-1. Extract the ZIP.
-2. Open the `KONNEKT-main` folder.
-3. Run `npm install`.
-4. Run `npm run build`.
-5. Deploy the generated `dist` folder or push the source to the existing GitHub repository and allow the configured workflow to deploy.
+1. Install dependencies with `npm ci` (or `npm install` if no lockfile is present).
+2. Run `npm run build` for web.
+3. Run `npm run build:mobile`, then `npx cap sync android` for Android assets.
+4. Build and verify on real target devices before controlled testing.
 
 ## Existing project protection
 
-- Keep the existing Supabase project and its data.
-- Do not expose a Supabase service-role key in browser code.
+- Keep the existing Supabase project, accounts, records, integrations and Android configuration.
+- Do not expose a Supabase `service_role` key in browser code.
 - Do not commit `.env` files or TURN credentials.
-- Apply only migrations that are not already applied. Review each migration before execution.
+- Review every migration and check which ones have already been applied before execution.
 
-See `KONNEKT-REVISED-PACKAGE-NOTES.md`, `TESTING-CHECKLIST.md`, `docs/TURN-AND-PUSH-SETUP.md` and `SUPABASE-SETUP.md` for deployment and verification instructions.
+See `SUPABASE-SETUP.md`, `TURN-AND-PUSH-SETUP.md`, `TESTING-CHECKLIST.md` and `docs/REAL-WORLD-TESTING-RELEASE.md` for setup and verification guidance.
