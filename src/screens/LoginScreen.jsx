@@ -30,7 +30,6 @@ const login = async () => {
     }
 
     navigation.replace('Reels');
-
   } catch (err) {
     setError(err.message || 'Login failed. Please try again.');
   } finally {
