@@ -1,19 +1,20 @@
 :root {
   color-scheme: dark;
-  --konnekt-purple: #7B2CFF;
-  --konnekt-purple-bright: #9B4DFF;
-  --konnekt-pink: #FF27B8;
-  --konnekt-blue: #176BFF;
-  --konnekt-cyan: #14D9F5;
+  --konnekt-purple: #6A0DAD;
+  --konnekt-purple-bright: #7D28C5;
+  --konnekt-gold: #FFC107;
+  --konnekt-orange: #FF6B00;
+  --konnekt-indigo: #3A0CA3;
+  --konnekt-cyan: #00E6FF;
   --konnekt-green: #35D94A;
-  --konnekt-orange: #FF7417;
-  --konnekt-bg: #070815;
-  --konnekt-surface: #111326;
-  --konnekt-surface-raised: #191B32;
-  --konnekt-border: rgba(179, 157, 255, .2);
+  --konnekt-bg: #10091B;
+  --konnekt-surface: #170D26;
+  --konnekt-surface-raised: #241630;
+  --konnekt-border: rgba(196, 169, 220, .22);
   --konnekt-text: #FAF8FF;
-  --konnekt-muted: #B5B3C9;
-  --konnekt-gradient: linear-gradient(115deg, var(--konnekt-purple), var(--konnekt-pink) 52%, var(--konnekt-blue));
+  --konnekt-muted: #C4B4D0;
+  --konnekt-gradient: linear-gradient(115deg, var(--konnekt-purple), var(--konnekt-indigo) 70%, var(--konnekt-cyan));
+  --konnekt-action-gradient: linear-gradient(110deg, var(--konnekt-orange), #FF8A00);
 }
 
 * { box-sizing: border-box; }
@@ -22,9 +23,9 @@ html { background: var(--konnekt-bg); }
 body {
   min-height: 100vh;
   background:
-    radial-gradient(ellipse at 2% 0%, rgba(120, 0, 255, .22), transparent 34rem),
-    radial-gradient(ellipse at 100% 30%, rgba(0, 122, 255, .16), transparent 32rem),
-    radial-gradient(ellipse at 60% 100%, rgba(255, 0, 182, .12), transparent 34rem),
+    radial-gradient(ellipse at 2% 0%, rgba(106, 13, 173, .24), transparent 34rem),
+    radial-gradient(ellipse at 100% 30%, rgba(58, 12, 163, .18), transparent 32rem),
+    radial-gradient(ellipse at 60% 100%, rgba(0, 230, 255, .06), transparent 34rem),
     var(--konnekt-bg);
   color: var(--konnekt-text);
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
@@ -40,19 +41,28 @@ button:focus-visible, input:focus-visible, textarea:focus-visible, [role="button
 }
 input, textarea { color-scheme: dark; }
 video { max-width: 100%; }
-::selection { color: white; background: rgba(155, 77, 255, .55); }
+::selection { color: #fff; background: rgba(106, 13, 173, .72); }
 ::-webkit-scrollbar { width: 7px; height: 7px; }
-::-webkit-scrollbar-thumb { background: linear-gradient(var(--konnekt-purple), var(--konnekt-pink)); border-radius: 12px; }
+::-webkit-scrollbar-thumb { background: linear-gradient(var(--konnekt-purple), var(--konnekt-indigo)); border-radius: 12px; }
 
-/* The signed-in app canvas carries the same midnight/neon atmosphere as the official concept. */
+/* Signed-in shell keeps the same brand atmosphere on mobile, tablet and desktop. */
 .konnekt-dark {
   color-scheme: dark;
   background-color: var(--konnekt-bg) !important;
   background-image:
-    radial-gradient(ellipse at 0% 0%, rgba(120, 0, 255, .18), transparent 28rem),
-    radial-gradient(ellipse at 100% 25%, rgba(0, 122, 255, .12), transparent 30rem) !important;
+    radial-gradient(ellipse at 0% 0%, rgba(106, 13, 173, .20), transparent 28rem),
+    radial-gradient(ellipse at 100% 25%, rgba(58, 12, 163, .14), transparent 30rem) !important;
 }
-.konnekt-light { color-scheme: light; background: #F7F3FC !important; }
+.konnekt-light {
+  color-scheme: light;
+  background: #F7F3FC !important;
+  --konnekt-bg: #F7F3FC;
+  --konnekt-surface: #FFFFFF;
+  --konnekt-surface-raised: #F0E8F7;
+  --konnekt-border: rgba(58, 12, 163, .18);
+  --konnekt-text: #25152F;
+  --konnekt-muted: #62546B;
+}
 .konnekt-light [class*="css-view"] { background-color: #F7F3FC !important; border-color: #E5D9EF !important; }
 .konnekt-light [class*="css-text"] { color: #25152F !important; }
 .konnekt-light [class*="css-textinput"] { background-color: #FFFFFF !important; color: #25152F !important; border-color: #DCCBE9 !important; }
@@ -61,7 +71,7 @@ video { max-width: 100%; }
 .konnekt-light [class*="css-image"] { background-color: transparent !important; }
 
 @media (min-width: 900px) {
-  #root { max-width: 1120px; margin: 0 auto; min-height: 100vh; box-shadow: 0 0 90px rgba(123, 44, 255, .14); }
+  #root { max-width: 1180px; margin: 0 auto; min-height: 100vh; box-shadow: 0 0 90px rgba(106, 13, 173, .16); }
 }
 @media (max-width: 600px) {
   body { background-attachment: fixed; }
