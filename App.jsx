@@ -12,10 +12,6 @@ import {
 import { supabase } from './src/lib_supabase';
 import './src/konnekt-theme.css';
 
-/*
- * One navigation system for the whole KONNEKT web app.
- * Every screen containing JSX uses the .jsx extension for reliable Vite parsing.
- */
 const discoveredScreens = import.meta.glob('./src/screens/*.jsx', {
   eager: true,
   import: 'default'
@@ -47,6 +43,15 @@ const tabs = [
   { name: 'Discover', icon: 'compass' },
   { name: 'Profile', icon: 'user-round' }
 ];
+
+const tabIcons = {
+  'message-circle': '✉',
+  'circle-dot': '◉',
+  'play-square': '▶',
+  phone: '☎',
+  compass: '◎',
+  'user-round': '◌'
+};
 
 function AppShell() {
   const { session, user, loading, recovery } = useAuth();
@@ -92,28 +97,14 @@ function AppShell() {
     return () => { active = false; supabase.removeChannel(channel); };
   }, [user?.id]);
 
-  const currentRoute = stack[stack.length - 1] || {
-    name: 'Welcome',
-    params: {}
-  };
+  const currentRoute = stack[stack.length - 1] || { name: 'Welcome', params: {} };
 
-  const navigate = useCallback((name, params = {}) => {
-    setStack(previous => [...previous, { name, params }]);
-  }, []);
-  const goBack = useCallback(() => {
-    setStack(previous => previous.length > 1 ? previous.slice(0, -1) : previous);
-  }, []);
-  const replace = useCallback((name, params = {}) => {
-    setStack(previous => [...previous.slice(0, -1), { name, params }]);
-  }, []);
-  const navigation = useMemo(() => ({
-    navigate, goBack, replace,
-    getParam: name => currentRoute.params?.[name]
-  }), [navigate, goBack, replace, currentRoute.params]);
+  const navigate = useCallback((name, params = {}) => { setStack(previous => [...previous, { name, params }]); }, []);
+  const goBack = useCallback(() => { setStack(previous => previous.length > 1 ? previous.slice(0, -1) : previous); }, []);
+  const replace = useCallback((name, params = {}) => { setStack(previous => [...previous.slice(0, -1), { name, params }]); }, []);
+  const navigation = useMemo(() => ({ navigate, goBack, replace, getParam: name => currentRoute.params?.[name] }), [navigate, goBack, replace, currentRoute.params]);
 
-  const openTab = useCallback(name => {
-    setStack([{ name, params: {} }]);
-  }, []);
+  const openTab = useCallback(name => { setStack([{ name, params: {} }]); }, []);
 
   const screenKey = routeAliases[currentRoute.name] || currentRoute.name;
   const ActiveScreen = screenRegistry[screenKey];
@@ -126,13 +117,17 @@ function AppShell() {
   );
 
   return (
-    <SafeAreaView className={lightMode ? "konnekt-light" : "konnekt-dark"} style={[styles.container, lightMode && styles.lightContainer]} testID="konnekt-app-shell">
+    <SafeAreaView className={lightMode ? 'konnekt-light' : 'konnekt-dark'} style={[styles.container, lightMode && styles.lightContainer]} testID="konnekt-app-shell">
       <StatusBar backgroundColor={lightMode ? '#F7F3FC' : '#10091B'} barStyle={lightMode ? 'dark-content' : 'light-content'} />
-      {isMainTab && session && <View style={styles.brandBar}>
-        <View style={styles.brandMark}><Text style={styles.brandMarkText}>K</Text></View>
-        <View style={styles.brandCopy}><Text style={styles.brandName}>KONNEKT</Text><Text style={styles.brandTagline}>Connecting people everywhere.</Text></View>
-        <TouchableOpacity accessibilityRole="button" accessibilityLabel={lightMode ? 'Switch to dark mode' : 'Switch to light mode'} style={styles.themeToggle} onPress={() => setLightMode(value => !value)}><Text style={styles.themeToggleText}>{lightMode ? '☾' : '☼'}</Text></TouchableOpacity>
-      </View>}
+      {isMainTab && session && (
+        <View style={styles.brandBar}>
+          <View style={styles.brandMark}><Text style={styles.brandMarkText}>K</Text></View>
+          <View style={styles.brandCopy}><Text style={styles.brandName}>KONNEKT</Text><Text style={styles.brandTagline}>Connecting people everywhere.</Text></View>
+          <TouchableOpacity accessibilityRole="button" accessibilityLabel={lightMode ? 'Switch to dark mode' : 'Switch to light mode'} style={styles.themeToggle} onPress={() => setLightMode(value => !value)}>
+            <Text style={styles.themeToggleText}>{lightMode ? '☾' : '☀'}</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       <View style={styles.screen}>
         {ActiveScreen ? (
           <ActiveScreen
@@ -143,17 +138,9 @@ function AppShell() {
           />
         ) : (
           <View style={styles.missingScreen}>
-            <Text style={styles.missingTitle}>
-              {currentRoute.name}
-            </Text>
-            <Text style={styles.missingText}>
-              This feature is not available in this build.
-            </Text>
-            <TouchableOpacity
-              accessibilityRole="button"
-              style={styles.backButton}
-              onPress={navigation.goBack}
-            >
+            <Text style={styles.missingTitle}>{currentRoute.name}</Text>
+            <Text style={styles.missingText}>This feature is not available in this build.</Text>
+            <TouchableOpacity accessibilityRole="button" style={styles.backButton} onPress={navigation.goBack}>
               <Text style={styles.backText}>← Go back</Text>
             </TouchableOpacity>
           </View>
@@ -170,14 +157,11 @@ function AppShell() {
                 accessibilityRole="button"
                 accessibilityLabel={tab.name}
                 accessibilityState={{ selected: active }}
-                style={styles.tab}
+                style={[styles.tab, active && styles.activeTab]}
                 onPress={() => openTab(tab.name)}
               >
-                <Text style={[styles.tabIcon, active && styles.activeTabIcon]}>{({ 'message-circle': '◉', 'circle-dot': '◌', 'play-square': '▶', phone: '☎', compass: '◎', 'user-round': '●' })[tab.icon]}</Text>
-                <Text style={[styles.tabLabel, active && styles.activeTabLabel]}>
-                  {tab.name}
-                </Text>
-                {active ? <View style={styles.activeLine} /> : null}
+                <Text style={[styles.tabIcon, active && styles.activeTabIcon]}>{tabIcons[tab.icon] || '•'}</Text>
+                <Text style={[styles.tabLabel, active && styles.activeTabLabel]}>{tab.name}</Text>
               </TouchableOpacity>
             );
           })}
@@ -190,7 +174,7 @@ function AppShell() {
 const styles = StyleSheet.create({
   container: { flex: 1, minHeight: '100vh', backgroundColor: '#10091B' },
   lightContainer: { backgroundColor: '#F7F3FC' },
-  brandBar: { minHeight: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#170D26', borderBottomWidth: 1, borderBottomColor: '#352044' },
+  brandBar: { minHeight: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#170D26', borderBottomWidth: 1, borderBottomColor: '#39244B' },
   brandMark: { width: 34, height: 34, borderRadius: 12, backgroundColor: '#6A0DAD', borderWidth: 1, borderColor: '#FFC107', alignItems: 'center', justifyContent: 'center' },
   brandMarkText: { color: '#FFFFFF', fontWeight: '900', fontSize: 19 },
   brandCopy: { marginLeft: 10, flex: 1 },
@@ -198,77 +182,19 @@ const styles = StyleSheet.create({
   brandTagline: { color: '#BBA9CC', fontSize: 9, marginTop: 2 },
   themeToggle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#30203F', alignItems: 'center', justifyContent: 'center' },
   themeToggleText: { color: '#FFC107', fontSize: 21 },
-  screen: {
-    flex: 1,
-    minHeight: 0
-  },
-  tabBar: {
-    minHeight: 68,
-    flexDirection: 'row',
-    backgroundColor: '#170D26',
-    borderTopWidth: 1,
-    borderTopColor: '#39244B',
-    justifyContent: 'space-around',
-    alignItems: 'center',
-    paddingBottom: 5
-  },
-  tab: {
-    flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: 62,
-    paddingHorizontal: 1
-  },
-  tabIcon: {
-    color: '#A998B8',
-    fontSize: 21,
-    marginBottom: 3
-  },
-  activeTabIcon: {
-    color: '#FFC107'
-  },
-  tabLabel: {
-    color: '#A998B8',
-    fontSize: 9,
-    fontWeight: '600'
-  },
-  activeTabLabel: {
-    color: '#FFC107'
-  },
-  activeLine: {
-    width: 22,
-    height: 3,
-    borderRadius: 3,
-    backgroundColor: '#FF6B00',
-    marginTop: 4
-  },
-  missingScreen: {
-    flex: 1,
-    backgroundColor: '#10091B',
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 25
-  },
-  missingTitle: {
-    color: '#FFFFFF',
-    fontSize: 24,
-    fontWeight: 'bold'
-  },
-  missingText: {
-    color: '#B8C4D4',
-    marginTop: 12,
-    textAlign: 'center'
-  },
-  backButton: {
-    backgroundColor: '#FF6B00',
-    padding: 14,
-    borderRadius: 10,
-    marginTop: 20
-  },
-  backText: {
-    color: '#FFFFFF',
-    fontWeight: 'bold'
-  }
+  screen: { flex: 1, minHeight: 0 },
+  tabBar: { minHeight: 68, flexDirection: 'row', backgroundColor: '#170D26', borderTopWidth: 1, borderTopColor: '#39244B', justifyContent: 'space-around', alignItems: 'center', paddingBottom: 6, paddingTop: 4 },
+  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 58, paddingHorizontal: 2, borderTopWidth: 2, borderTopColor: 'transparent' },
+  activeTab: { borderTopColor: '#FF6B00' },
+  tabIcon: { color: '#A998B8', fontSize: 18, marginBottom: 2 },
+  activeTabIcon: { color: '#FFC107' },
+  tabLabel: { color: '#A998B8', fontSize: 9, fontWeight: '600' },
+  activeTabLabel: { color: '#FFC107' },
+  missingScreen: { flex: 1, backgroundColor: '#10091B', justifyContent: 'center', alignItems: 'center', padding: 25 },
+  missingTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: 'bold' },
+  missingText: { color: '#B8C4D4', marginTop: 12, textAlign: 'center' },
+  backButton: { backgroundColor: '#FF6B00', padding: 14, borderRadius: 10, marginTop: 20 },
+  backText: { color: '#FFFFFF', fontWeight: 'bold' }
 });
 
 export default function App() { return <AuthProvider><AppShell /></AuthProvider>; }

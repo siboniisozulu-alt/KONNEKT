@@ -1,20 +1,24 @@
 # KONNEKT official visual direction
 
-The approved concept is the midnight-neon KONNEKT identity: deep navy/black surfaces, luminous purple and neon-pink gradients, royal-blue accents, cyan highlights, bright readable type, circular creator/status imagery, and compact touch-friendly navigation.
+KONNEKT 2.0 uses the official Royal Purple, Solar Gold, Sunset Orange, Electric Indigo and Neo Cyan palette. Royal Purple is the dominant brand colour; Electric Indigo supports secondary surfaces; Solar Gold marks important states; Sunset Orange is reserved for primary actions; Neo Cyan marks selected and keyboard-focused interactions. Do not use WhatsApp green or imitate TikTok branding.
 
-## Core tokens
+## Brand tokens
 
-- Midnight canvas: `#070815`
-- Dark panel: `#111326`
-- KONNEKT purple: `#7B2CFF`
-- Neon pink: `#FF27B8`
-- Royal blue: `#176BFF`
-- Dark cyan: `#14D9F5`
-- Primary text: `#FAF8FF`
-- Muted text: `#B5B3C9`
+| Token | Value | Use |
+| --- | --- | --- |
+| Royal Purple | `#6A0DAD` | Primary identity, navigation and branded surfaces |
+| Solar Gold | `#FFC107` | Important indicators and status accents |
+| Sunset Orange | `#FF6B00` | Primary action buttons |
+| Electric Indigo | `#3A0CA3` | Secondary surfaces and depth |
+| Neo Cyan | `#00E6FF` | Selected interactive accents and focus rings |
+| Canvas | `#10091B` | Dark application canvas |
+| Primary text | `#FAF8FF` | Text on dark surfaces |
+| Muted text | `#C4B4D0` | Supporting text on dark surfaces |
 
-The shared web theme is in `src/konnekt-theme.css`. New or updated screens should use these CSS custom properties rather than introducing unrelated accent colors. Keep text contrast strong and preserve visible focus states, reduced-motion support, responsive layouts, and accessible touch targets.
+## Interface guidance
 
-## Concept references
+Use rounded, consistent components, readable text contrast, responsive layouts and reduced-motion-aware transitions. Dark and light appearance are supported by the app shell; individual legacy screens should be checked for inline colors before claiming complete theme parity. Use `src/konnekt-theme.css` for shared tokens and global styling.
 
-The supplied concept shows three central experiences: Chats with status/story circles, a full-screen vertical Reels feed, and Discover with topic cards, creator circles, and live previews. The authenticated app keeps the existing six destinations—Chats, Updates, Reels, Calls, Discover, Profile—while applying the common midnight/neon design language. Placeholder marketing counts or creator earnings must not be presented as real user data.
+## Assets and implementation
+
+The web manifest uses the existing root `konnekt-192.png` and `konnekt-512.png` artwork rather than paths to icons that are not present in the repository. Android launcher resources remain part of the existing Capacitor project. Verify generated Android adaptive icons and splash assets on-device before release; changing the launcher background resource alone does not regenerate the image assets.
