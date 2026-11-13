@@ -3,6 +3,7 @@ import React, {
   createContext,
   useContext,
   useEffect,
+  useRef,
   useState,
 } from 'react';
 
@@ -24,40 +25,79 @@ export function AuthProvider({ children }) {
   const [loading, setLoading] = useState(true);
   const [recovery, setRecovery] = useState(false);
 
-  // Keep the user's online status connected to their login session.
+  // Remember the currently authenticated user for sign-out handling.
+  const currentUserId = useRef(null);
+
+  // Safely update the user's online status in Supabase.
+  const publishPresence = async (userId, isOnline) => {
+    if (!userId) return;
+
+    try {
+      await setMyPresence(userId, isOnline);
+    } catch (error) {
+      console.error('KONNEKT presence update failed:', error);
+    }
+  };
+
+  // Keep authentication and presence connected.
   useEffect(() => {
     let alive = true;
-
-    const publishPresence = async (userId, isOnline) => {
-      if (!userId) return;
-
-      try {
-        await setMyPresence(userId, isOnline);
-      } catch (error) {
-        console.error('KONNEKT presence update failed:', error);
-      }
-    };
 
     const handleSession = (nextSession) => {
       if (!alive) return;
 
+      const nextUserId = nextSession?.user?.id || null;
+      const previousUserId = currentUserId.current;
+
+      // Mark the previous account offline if the account changes or signs out.
+      if (previousUserId && previousUserId !== nextUserId) {
+        publishPresence(previousUserId, false);
+      }
+
+      currentUserId.current = nextUserId;
       setSession(nextSession);
 
-      const userId = nextSession?.user?.id;
+      if (nextUserId) {
+        publishPresence(nextUserId, true);
 
-      if (userId) {
-        initialisePushNotifications(userId);
-        publishPresence(userId, true);
+        // Initialise push notifications without blocking authentication.
+        Promise.resolve(initialisePushNotifications(nextUserId)).catch(
+          (error) => {
+            console.error(
+              'KONNEKT push notification initialisation failed:',
+              error
+            );
+          }
+        );
       }
     };
 
+    // Subscribe to authentication changes.
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, nextSession) => {
+      if (!alive) return;
+
+      if (event === 'PASSWORD_RECOVERY') {
+        setRecovery(true);
+      }
+
+      if (event === 'SIGNED_OUT') {
+        setRecovery(false);
+      }
+
+      handleSession(nextSession);
+      setLoading(false);
+    });
+
+    // Restore an existing login session.
     supabase.auth
       .getSession()
       .then(({ data, error }) => {
         if (error) throw error;
 
         if (alive) {
-          handleSession(data.session);
+          handleSession(data?.session || null);
           setLoading(false);
         }
       })
@@ -69,49 +109,22 @@ export function AuthProvider({ children }) {
         }
       });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, nextSession) => {
-      if (event === 'PASSWORD_RECOVERY') {
-        setRecovery(true);
-      }
-
-      if (event === 'SIGNED_OUT') {
-        setRecovery(false);
-      }
-
-      handleSession(nextSession);
-
-      if (event === 'SIGNED_OUT') {
-        // The user is no longer logged in.
-        setLoading(false);
-      }
-    });
-
     return () => {
       alive = false;
       subscription.unsubscribe();
     };
   }, []);
 
-  // Update presence when the browser tab becomes hidden or visible.
+  // Update presence when the browser tab becomes visible or hidden.
   useEffect(() => {
     const userId = session?.user?.id;
 
     if (!userId) return;
 
     const updateBrowserPresence = () => {
-      publishCurrentPresence(
-        userId,
-        document.visibilityState === 'visible'
-      );
+      const isVisible = document.visibilityState === 'visible';
+      publishPresence(userId, isVisible);
     };
-
-    function publishCurrentPresence(id, online) {
-      setMyPresence(id, online).catch((error) => {
-        console.error('KONNEKT browser presence error:', error);
-      });
-    }
 
     document.addEventListener(
       'visibilitychange',
@@ -128,33 +141,44 @@ export function AuthProvider({ children }) {
     };
   }, [session?.user?.id]);
 
-  // Update presence when the Capacitor Android app enters or leaves the foreground.
+  // Update presence when the Android app enters or leaves the foreground.
   useEffect(() => {
     const userId = session?.user?.id;
 
     if (!userId) return;
 
-    let listener;
+    let active = true;
+    let listener = null;
 
     const setupAppListener = async () => {
       try {
-        listener = await App.addListener(
+        const newListener = await App.addListener(
           'appStateChange',
           ({ isActive }) => {
-            setMyPresence(userId, isActive).catch((error) => {
-              console.error('KONNEKT app presence error:', error);
-            });
+            publishPresence(userId, !!isActive);
           }
         );
+
+        // Handle cleanup if the user signs out before registration finishes.
+        if (!active) {
+          await newListener.remove();
+          return;
+        }
+
+        listener = newListener;
       } catch (error) {
-        // Browser builds may not support the native app lifecycle listener.
-        console.warn('KONNEKT native app listener unavailable:', error);
+        console.warn(
+          'KONNEKT native app lifecycle listener unavailable:',
+          error
+        );
       }
     };
 
     setupAppListener();
 
     return () => {
+      active = false;
+
       if (listener) {
         listener.remove();
       }
