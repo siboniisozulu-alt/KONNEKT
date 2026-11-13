@@ -60,32 +60,182 @@ function AppShell() {
   const [lightMode, setLightMode] = useState(false);
   const seenIncomingCalls = React.useRef(new Set());
 
-useEffect(() => {
-  if (!loading) {
-    setStack([{
-      name: recovery ? 'PasswordReset' : 'Welcome',
-      params: {}
-    }]);
-  }
-}, [loading, recovery]);
-    supabase.from('call_sessions').select('*').eq('callee_id', user.id).eq('status', 'ringing').order('created_at', { ascending: false }).limit(1).then(({ data }) => { if (data?.[0]) showIncoming(data[0]); });
-    const showGroupInvite = async invite => {
-      if (!active || !invite?.call_id || invite.user_id !== user.id || invite.status !== 'invited' || seenIncomingCalls.current.has(`group-${invite.call_id}`)) return;
-      seenIncomingCalls.current.add(`group-${invite.call_id}`);
-      const { data: call } = await supabase.from('group_call_sessions').select('id,conversation_id,call_type,created_by,status').eq('id', invite.call_id).maybeSingle();
-      if (!active || !call || call.status === 'ended') return;
-      const { data: conversation } = await supabase.from('conversations').select('title').eq('id', call.conversation_id).maybeSingle();
-      Alert.alert('Group call invitation', `Join ${conversation?.title || 'a KONNEKT group'}?`, [
-        { text: 'Decline', style: 'cancel', onPress: () => supabase.from('group_call_participants').update({ status: 'declined' }).eq('call_id', call.id).eq('user_id', user.id).then(() => {}) },
-        { text: 'Join', onPress: () => setStack(previous => [...previous, { name: 'GroupCall', params: { callId: call.id, conversationId: call.conversation_id, callType: call.call_type, groupName: conversation?.title || 'KONNEKT group' } }]) }
-      ]);
+  // Keep the welcome and password-recovery screens in sync with authentication.
+  useEffect(() => {
+    if (!loading) {
+      setStack([{
+        name: recovery ? 'PasswordReset' : 'Welcome',
+        params: {}
+      }]);
+    }
+  }, [loading, recovery]);
+
+  // Listen for incoming one-to-one and group calls.
+  useEffect(() => {
+    if (!user?.id) return;
+
+    let active = true;
+
+    const showIncoming = call => {
+      if (
+        !active ||
+        !call?.id ||
+        seenIncomingCalls.current.has(call.id)
+      ) return;
+
+      seenIncomingCalls.current.add(call.id);
+
+      Alert.alert(
+        call.call_type === 'video' ? 'Incoming video call' : 'Incoming voice call',
+        'Someone is calling you on KONNEKT.',
+        [
+          {
+            text: 'Decline',
+            style: 'cancel',
+            onPress: () => {
+              supabase
+                .from('call_sessions')
+                .update({ status: 'declined' })
+                .eq('id', call.id);
+            }
+          },
+          {
+            text: 'Answer',
+            onPress: () => {
+              setStack(previous => [
+                ...previous,
+                {
+                  name: 'Call',
+                  params: {
+                    callId: call.id,
+                    callType: call.call_type || 'voice',
+                    contact: { name: 'KONNEKT member' }
+                  }
+                }
+              ]);
+            }
+          }
+        ]
+      );
     };
-    const channel = supabase.channel(`incoming-calls-${user.id}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'call_sessions', filter: `callee_id=eq.${user.id}` }, payload => showIncoming(payload.new))
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'group_call_participants', filter: `user_id=eq.${user.id}` }, payload => showGroupInvite(payload.new))
+
+    // Check whether a call is already ringing.
+    supabase
+      .from('call_sessions')
+      .select('*')
+      .eq('callee_id', user.id)
+      .eq('status', 'ringing')
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .then(({ data }) => {
+        if (active && data?.[0]) {
+          showIncoming(data[0]);
+        }
+      });
+
+    // Handle incoming group-call invitations.
+    const showGroupInvite = async invite => {
+      if (
+        !active ||
+        !invite?.call_id ||
+        invite.user_id !== user.id ||
+        invite.status !== 'invited' ||
+        seenIncomingCalls.current.has(`group-${invite.call_id}`)
+      ) return;
+
+      seenIncomingCalls.current.add(`group-${invite.call_id}`);
+
+      const { data: call } = await supabase
+        .from('group_call_sessions')
+        .select('id,conversation_id,call_type,created_by,status')
+        .eq('id', invite.call_id)
+        .maybeSingle();
+
+      if (!active || !call || call.status === 'ended') return;
+
+      const { data: conversation } = await supabase
+        .from('conversations')
+        .select('title')
+        .eq('id', call.conversation_id)
+        .maybeSingle();
+
+      Alert.alert(
+        'Group call invitation',
+        `Join ${conversation?.title || 'a KONNEKT group'}?`,
+        [
+          {
+            text: 'Decline',
+            style: 'cancel',
+            onPress: () => {
+              supabase
+                .from('group_call_participants')
+                .update({ status: 'declined' })
+                .eq('call_id', call.id)
+                .eq('user_id', user.id);
+            }
+          },
+          {
+            text: 'Join',
+            onPress: () => {
+              setStack(previous => [
+                ...previous,
+                {
+                  name: 'GroupCall',
+                  params: {
+                    callId: call.id,
+                    conversationId: call.conversation_id,
+                    callType: call.call_type,
+                    groupName: conversation?.title || 'KONNEKT group'
+                  }
+                }
+              ]);
+            }
+          }
+        ]
+      );
+    };
+
+    // Subscribe to new incoming calls and group invitations.
+    const channel = supabase
+      .channel(`incoming-calls-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'call_sessions',
+          filter: `callee_id=eq.${user.id}`
+        },
+        payload => showIncoming(payload.new)
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'group_call_participants',
+          filter: `user_id=eq.${user.id}`
+        },
+        payload => showGroupInvite(payload.new)
+      )
       .subscribe();
-    supabase.from('group_call_participants').select('call_id,user_id,status').eq('user_id', user.id).eq('status', 'invited').then(({ data }) => { if (data?.length) showGroupInvite(data[0]); });
-    return () => { active = false; supabase.removeChannel(channel); };
+
+    // Check for an invitation that arrived before this screen loaded.
+    supabase
+      .from('group_call_participants')
+      .select('call_id,user_id,status')
+      .eq('user_id', user.id)
+      .eq('status', 'invited')
+      .then(({ data }) => {
+        if (active && data?.length) {
+          showGroupInvite(data[0]);
+        }
+      });
+
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
   }, [user?.id]);
 
   const currentRoute = stack[stack.length - 1] || { name: 'Welcome', params: {} };
