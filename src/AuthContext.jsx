@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { supabase } from './lib_supabase';
-import { initialisePushNotifications } from './services/pushNotifications';
+import { initialisePushNotifications } from './pushNotifications';
 
 const AuthContext = createContext({ session: null, user: null, loading: true });
 export function AuthProvider({ children }) {
