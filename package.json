@@ -1,7 +1,7 @@
 
 {
-  "name": "konnekt",
-  "version": "1.0.0",
+  "name": "konnekt-real-world-test",
+  "version": "0.1.0",
   "private": true,
   "description": "KONNEKT - Connecting people everywhere",
   "type": "module",
@@ -26,7 +26,7 @@
     "@capacitor/core": "^7.4.3",
     "@capacitor/filesystem": "^7.1.4",
     "@capacitor/haptics": "^7.0.2",
-    "@capacitor/ios": "^7.4.3",
+    "@capacitor/ios": "^7.0.2",
     "@capacitor/keyboard": "^7.0.3",
     "@capacitor/status-bar": "^7.0.2",
     "@supabase/supabase-js": "^2.57.0",
