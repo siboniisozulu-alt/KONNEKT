@@ -1,4 +1,4 @@
-import { supabase } from '../lib_supabase';
+import { supabase } from './lib_supabase';
 
 export async function setMyPresence(userId, isOnline) {
   if (!userId) return;
