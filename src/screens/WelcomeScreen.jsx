@@ -5,9 +5,21 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
+  Linking,
 } from 'react-native';
 
+const APK_DOWNLOAD_URL = 'https://github.com/siboniisozulu-alt/KONNEKT/actions/workflows/build-android-apk.yml';
+
 export default function WelcomeScreen({ navigation }) {
+  const openApkDownload = () => {
+    if (typeof window !== 'undefined' && typeof window.open === 'function') {
+      window.open(APK_DOWNLOAD_URL, '_blank', 'noopener,noreferrer');
+      return;
+    }
+
+    Linking.openURL(APK_DOWNLOAD_URL);
+  };
+
   return (
     <ScrollView
       style={styles.container}
@@ -45,6 +57,10 @@ export default function WelcomeScreen({ navigation }) {
         ))}
       </View>
 
+      <TouchableOpacity style={styles.downloadButton} onPress={openApkDownload}>
+        <Text style={styles.downloadButtonText}>Download Android APK</Text>
+      </TouchableOpacity>
+
       <TouchableOpacity style={styles.signup} onPress={() => navigation.navigate('SignUp')}>
         <Text style={styles.signupText}>SIGN UP</Text>
       </TouchableOpacity>
@@ -73,6 +89,8 @@ const styles = StyleSheet.create({
   feature: { width: '48%', backgroundColor: '#170D26', borderRadius: 14, borderWidth: 1, borderColor: '#39244B', padding: 16, marginBottom: 12, alignItems: 'center' },
   featureIcon: { fontSize: 30, marginBottom: 8 },
   featureText: { color: '#FFFFFF', fontSize: 12, textAlign: 'center' },
+  downloadButton: { backgroundColor: '#0EA5E9', padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 12 },
+  downloadButtonText: { color: '#FFFFFF', fontWeight: '900', letterSpacing: 1 },
   signup: { backgroundColor: '#FF6B00', padding: 16, borderRadius: 12, alignItems: 'center', marginBottom: 12 },
   signupText: { color: '#FFFFFF', fontWeight: '900', letterSpacing: 1 },
   login: { backgroundColor: '#3A0CA3', borderWidth: 1, borderColor: '#00E6FF', padding: 16, borderRadius: 12, alignItems: 'center' },
