@@ -1,8 +1,10 @@
+
 {
   "name": "konnekt",
   "version": "1.0.0",
   "private": true,
   "description": "KONNEKT - Connecting people everywhere",
+  "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0",
     "build": "vite build",
@@ -10,7 +12,11 @@
     "build:mobile": "vite build --base=./",
     "cap:sync": "npm run build:mobile && cap sync",
     "cap:android": "cap open android",
-    "cap:ios": "cap open ios"
+    "cap:ios": "cap open ios",
+    "android:add": "npx cap add android",
+    "android:sync": "npx cap sync android",
+    "android:open": "npx cap open android",
+    "android:build:debug": "cd android && gradlew.bat assembleDebug"
   },
   "dependencies": {
     "react": "18.3.1",
@@ -32,7 +38,7 @@
   "devDependencies": {
     "@vitejs/plugin-react": "4.3.4",
     "vite": "5.4.14",
-    "@capacitor/cli": "^7.4.3"
-  },
-  "type": "module"
+    "@capacitor/cli": "^7.4.3",
+    "typescript": "^5.0.0"
+  }
 }
