@@ -1,16 +1,25 @@
-name: Build KONNEKT Android APK
+
+name: Build and Verify KONNEKT Android APK
 
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches:
+      - main
     paths:
       - 'App.jsx'
       - 'main.jsx'
       - 'src/**'
       - 'index.html'
       - 'package.json'
+      - 'vite.config.js'
       - 'capacitor.config.json'
+      - 'capacitor.config.ts'
+      - 'manifest.webmanifest'
+      - 'sw.js'
+      - 'konnekt.svg'
+      - 'konnekt-192.png'
+      - 'konnekt-512.png'
       - '.github/workflows/build-android-apk.yml'
 
 permissions:
@@ -19,8 +28,9 @@ permissions:
 jobs:
   android-apk:
     runs-on: ubuntu-latest
+
     steps:
-      - name: Check out KONNEKT
+      - name: Download repository
         uses: actions/checkout@v4
 
       - name: Set up Node.js
@@ -34,26 +44,82 @@ jobs:
           distribution: temurin
           java-version: '21'
 
-      - name: Install JavaScript dependencies
-        run: npm install
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
 
-      - name: Build web assets for the native app
+      - name: Build mobile website
         run: npm run build:mobile
+
+      - name: Verify website assets
+        run: |
+          test -f dist/index.html
+          echo "Website entry point exists."
+          ls -la dist
 
       - name: Generate Android project
         run: npx cap add android
 
-      - name: Sync Capacitor Android project
+      - name: Synchronise Capacitor
         run: npx cap sync android
 
-      - name: Build debug APK
-        working-directory: android
-        run: ./gradlew assembleDebug
+      - name: Set Android 8 minimum SDK
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
 
-      - name: Upload APK artifact
+          file = Path("android/variables.gradle")
+          if not file.exists():
+              raise SystemExit("Android variables.gradle was not generated.")
+
+          content = file.read_text()
+          pattern = r'(?m)^(\s*minSdkVersion\s*=\s*)\d+'
+
+          updated, count = re.subn(
+              pattern,
+              r'\g<1>26',
+              content,
+              count=1
+          )
+
+          if count != 1:
+              raise SystemExit("Could not safely set minSdkVersion.")
+
+          file.write_text(updated)
+          print("Android minimum SDK set to 26.")
+          PY
+
+          grep -n "minSdkVersion" android/variables.gradle
+
+      - name: Build Android APK
+        working-directory: android
+        run: ./gradlew --no-daemon clean assembleDebug
+
+      - name: Verify APK file and signature
+        run: |
+          APK="android/app/build/outputs/apk/debug/app-debug.apk"
+
+          test -s "$APK"
+          echo "APK exists and is not empty."
+
+          zipinfo -t "$APK"
+
+          APKSIGNER="$(find "${ANDROID_HOME:-$ANDROID_SDK_ROOT}/build-tools" -type f -name apksigner | sort -V | tail -n 1)"
+
+          if [ -z "$APKSIGNER" ]; then
+            echo "Could not find Android APK signature verifier."
+            exit 1
+          fi
+
+          "$APKSIGNER" verify --verbose "$APK"
+
+          echo "APK signature verification passed."
+
+      - name: Upload verified APK
         uses: actions/upload-artifact@v4
         with:
-          name: KONNEKT-Android-APK
+          name: KONNEKT-Android-API26-Test
           path: android/app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 30
+          
