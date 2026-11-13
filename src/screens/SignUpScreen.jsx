@@ -13,31 +13,60 @@ export default function SignUpScreen({ navigation }) {
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const register = async () => {
-    setError('');
-    setMessage('');
-    if (!fullName.trim() || !username.trim() || !email.trim() || !password || !confirm) {
-      return setError('Complete your name, username, email and password fields.');
-    }
-    if (!/^[a-zA-Z0-9_.]{3,20}$/.test(username.trim())) {
-      return setError('Username must be 3–20 characters and use letters, numbers, dots or underscores.');
-    }
-    if (password.length < 8) return setError('Use a password with at least 8 characters.');
-    if (password !== confirm) return setError('The passwords do not match.');
-    setBusy(true);
+ 
+const register = async () => {
+  setError('');
+  setMessage('');
+
+  if (!fullName.trim() || !username.trim() || !email.trim() || !password || !confirm) {
+    return setError('Complete your name, username, email and password fields.');
+  }
+
+  if (!/^[a-zA-Z0-9_.]{3,20}$/.test(username.trim())) {
+    return setError('Username must be 3–20 characters and use letters, numbers, dots or underscores.');
+  }
+
+  if (password.length < 8) {
+    return setError('Use a password with at least 8 characters.');
+  }
+
+  if (password !== confirm) {
+    return setError('The passwords do not match.');
+  }
+
+  setBusy(true);
+
+  try {
     const { data, error: signupError } = await supabase.auth.signUp({
       email: email.trim().toLowerCase(),
       password,
       options: {
         emailRedirectTo: window.location.origin + window.location.pathname,
-        data: { full_name: fullName.trim(), username: username.trim().toLowerCase(), phone: phone.trim() }
+        data: {
+          full_name: fullName.trim(),
+          username: username.trim().toLowerCase(),
+          phone: phone.trim()
+        }
       }
     });
+
+    if (signupError) {
+      setError(signupError.message);
+      return;
+    }
+
+    if (data.session) {
+      navigation.replace('Reels');
+    } else {
+      setMessage('Account created! Check your email and confirm your address before logging in.');
+    }
+  } catch (err) {
+    setError(err.message || 'Registration failed. Please try again.');
+  } finally {
     setBusy(false);
-    if (signupError) return setError(signupError.message);
-    if (data.session) setMessage('Your account has been created. Welcome to KONNEKT!');
-    else setMessage('Account created. Check your email and confirm your address before logging in.');
-  };
+  }
+};
+
 
   return <ScrollView contentContainerStyle={styles.page} keyboardShouldPersistTaps="handled">
     <TouchableOpacity onPress={() => navigation.goBack()}><Text style={styles.back}>‹ Back</Text></TouchableOpacity>
