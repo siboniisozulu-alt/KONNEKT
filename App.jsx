@@ -60,24 +60,14 @@ function AppShell() {
   const [lightMode, setLightMode] = useState(false);
   const seenIncomingCalls = React.useRef(new Set());
 
-  useEffect(() => {
-    if (!loading) setStack([{ name: recovery ? 'PasswordReset' : (session ? 'Reels' : 'Welcome'), params: {} }]);
-  }, [loading, session?.user?.id, recovery]);
-
-  useEffect(() => {
-    if (!user?.id) return;
-    let active = true;
-    const showIncoming = async call => {
-      if (!active || !call?.id || call.callee_id !== user.id || call.status !== 'ringing' || seenIncomingCalls.current.has(call.id)) return;
-      seenIncomingCalls.current.add(call.id);
-      const { data: caller } = await supabase.from('profiles').select('full_name,username').eq('id', call.caller_id).maybeSingle();
-      if (!active) return;
-      const contact = { id: call.caller_id, name: caller?.full_name || caller?.username || 'KONNEKT member' };
-      Alert.alert('Incoming KONNEKT call', `${contact.name} is calling you.`, [
-        { text: 'Decline', style: 'cancel', onPress: () => supabase.from('call_sessions').update({ status: 'declined', ended_at: new Date().toISOString() }).eq('id', call.id).then(() => {}) },
-        { text: 'Answer', onPress: () => setStack(previous => [...previous, { name: 'Call', params: { callId: call.id, callType: call.call_type, contact } }]) }
-      ]);
-    };
+useEffect(() => {
+  if (!loading) {
+    setStack([{
+      name: recovery ? 'PasswordReset' : 'Welcome',
+      params: {}
+    }]);
+  }
+}, [loading, recovery]);
     supabase.from('call_sessions').select('*').eq('callee_id', user.id).eq('status', 'ringing').order('created_at', { ascending: false }).limit(1).then(({ data }) => { if (data?.[0]) showIncoming(data[0]); });
     const showGroupInvite = async invite => {
       if (!active || !invite?.call_id || invite.user_id !== user.id || invite.status !== 'invited' || seenIncomingCalls.current.has(`group-${invite.call_id}`)) return;
