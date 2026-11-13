@@ -18,7 +18,7 @@ Use this checklist after the GitHub Pages deployment finishes. The deployed page
 ## Navigation and implemented features
 
 - [ ] Verify each approved navigation destination opens and returns correctly.
-- [ ] The current React app and README define **six** primary destinations: Chats, Updates, Reels, Calls, Discover, and Profile. If the release requirement is exactly five tabs, resolve which destination is excluded before changing navigation; do not silently remove an existing destination.
+- [ ] Confirm the six primary destinations are in this order: Reels, Chats, Status, Discover, Calls, Profile.
 - [ ] Test only features wired to the configured backend: direct/group messaging and attachments, Reels/posts, Status, Discover, profile, and call signalling. Verify persistence/realtime behavior with both test accounts where applicable.
 - [ ] Treat calls, media delivery, and push as unverified until their required backend/storage, TURN, or push services are configured and tested on the target network/device. A UI or signalling record alone is not proof of a successful call or delivery.
 

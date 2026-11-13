@@ -78,7 +78,7 @@ export default function StatusScreen({ navigation }) {
     <View style={s.container}>
       <View style={s.header}>
         <View>
-          <Text style={s.title}>Updates</Text>
+          <Text style={s.title}>Status</Text>
           <Text style={s.sub}>Photos, videos and text updates that expire after 24 hours</Text>
         </View>
         <TouchableOpacity style={s.add} onPress={() => navigation.navigate('CreateStatus')}>
@@ -95,8 +95,8 @@ export default function StatusScreen({ navigation }) {
         <Text style={s.open}>New</Text>
       </TouchableOpacity>
 
-      {myRows.length > 0 && <><Text style={s.section}>Your updates</Text><FlatList data={myRows} keyExtractor={x => x.id} renderItem={renderStatus} scrollEnabled={false} /></>}
-      <Text style={s.section}>Recent updates</Text>
+      {myRows.length > 0 && <><Text style={s.section}>Your statuses</Text><FlatList data={myRows} keyExtractor={x => x.id} renderItem={renderStatus} scrollEnabled={false} /></>}
+      <Text style={s.section}>Recent statuses</Text>
       {busy ? (
         <ActivityIndicator color="#FFC107" style={{ marginTop: 30 }} />
       ) : (
@@ -138,57 +138,3 @@ const s = StyleSheet.create({
   empty: { color: '#C4B4D0', textAlign: 'center', paddingVertical: 20, fontSize: 12 },
   error: { color: '#FFD0B5', marginTop: 10, backgroundColor: 'rgba(255,107,0,.12)', padding: 10, borderRadius: 9 }
 });
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

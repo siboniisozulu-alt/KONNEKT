@@ -28,6 +28,7 @@ const screenRegistry = Object.fromEntries(
 const routeAliases = {
   Reels: 'Watch',
   Updates: 'Status',
+  Status: 'Status',
   Discover: 'Discover',
   ChatMedia: 'ChatAttachments',
   CameraScreen: 'Camera',
@@ -36,11 +37,11 @@ const routeAliases = {
 };
 
 const tabs = [
-  { name: 'Chats', icon: 'message-circle' },
-  { name: 'Updates', icon: 'circle-dot' },
   { name: 'Reels', icon: 'play-square' },
-  { name: 'Calls', icon: 'phone' },
+  { name: 'Chats', icon: 'message-circle' },
+  { name: 'Status', icon: 'circle-dot' },
   { name: 'Discover', icon: 'compass' },
+  { name: 'Calls', icon: 'phone' },
   { name: 'Profile', icon: 'user-round' }
 ];
 
@@ -60,7 +61,7 @@ function AppShell() {
   const seenIncomingCalls = React.useRef(new Set());
 
   useEffect(() => {
-    if (!loading) setStack([{ name: recovery ? 'PasswordReset' : (session ? 'Chats' : 'Welcome'), params: {} }]);
+    if (!loading) setStack([{ name: recovery ? 'PasswordReset' : (session ? 'Reels' : 'Welcome'), params: {} }]);
   }, [loading, session?.user?.id, recovery]);
 
   useEffect(() => {
@@ -183,7 +184,7 @@ const styles = StyleSheet.create({
   themeToggle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#30203F', alignItems: 'center', justifyContent: 'center' },
   themeToggleText: { color: '#FFC107', fontSize: 21 },
   screen: { flex: 1, minHeight: 0 },
-  tabBar: { minHeight: 68, flexDirection: 'row', backgroundColor: '#170D26', borderTopWidth: 1, borderTopColor: '#39244B', justifyContent: 'space-around', alignItems: 'center', paddingBottom: 6, paddingTop: 4 },
+  tabBar: { minHeight: 68, flexDirection: 'row', backgroundColor: '#170D26', borderTopWidth: 1, borderTopColor: '#39244B', justifyContent: 'space-around', alignItems: 'center', paddingBottom: 6 },
   tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 58, paddingHorizontal: 2, borderTopWidth: 2, borderTopColor: 'transparent' },
   activeTab: { borderTopColor: '#FF6B00' },
   tabIcon: { color: '#A998B8', fontSize: 18, marginBottom: 2 },
