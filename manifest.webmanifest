@@ -1,14 +1,20 @@
 {
-  "name": "KONNEKT — Connecting people everywhere",
+  "id": "./",
+  "name": "KONNEKT \u2014 Stay Connected",
   "short_name": "KONNEKT",
-  "description": "Connect, chat, share Reels and discover people worldwide.",
-  "start_url": ".",
-  "scope": ".",
+  "description": "A social app preview with messaging, calls, status, discovery and Reels.",
+  "start_url": "./",
+  "scope": "./",
   "display": "standalone",
-  "background_color": "#10091B",
-  "theme_color": "#6A0DAD",
+  "orientation": "portrait",
+  "background_color": "#07050d",
+  "theme_color": "#0b0715",
   "icons": [
-    { "src": "./konnekt-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any maskable" },
-    { "src": "./konnekt-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any maskable" }
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
   ]
 }

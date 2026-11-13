@@ -1,0 +1,42 @@
+project_id = "konnekt-staging"
+
+[api]
+enabled = true
+schemas = ["public", "graphql_public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+
+[auth]
+enabled = true
+site_url = "https://YOUR-KONNEKT-STAGING-DOMAIN"
+additional_redirect_urls = ["https://YOUR-KONNEKT-STAGING-DOMAIN/**"]
+enable_signup = true
+
+[auth.email]
+enable_signup = true
+double_confirm_changes = true
+enable_confirmations = true
+secure_password_change = true
+
+[functions.delete-account]
+verify_jwt = true
+
+[functions.export-account]
+verify_jwt = true
+
+[functions.moderation-review]
+verify_jwt = true
+
+[functions.moderation-inbox]
+verify_jwt = true
+
+[functions.livekit-token]
+verify_jwt = true
+
+[functions.cleanup-expired-statuses]
+verify_jwt = false
+
+[functions.send-push]
+verify_jwt = true

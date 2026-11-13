@@ -1,0 +1,7 @@
+KONNEKT DESIGN UPDATE
+
+The responsive preview has been restyled to follow the supplied concept: dark premium surfaces, Royal Purple, Solar Gold, Sunset Orange, Electric Indigo and Neo Cyan accents, gradient actions, neon borders and glowing creator surfaces.
+
+The six existing app sections and local preview interactions have been preserved. The design reference image is included in konnekt_pwa/design-reference.png for reference only; it is not used as a flat screenshot in place of the app.
+
+This remains a local-first front-end preview. Real online accounts, cross-device sync, real-time messaging, video hosting and live calls require backend/service integration later.
