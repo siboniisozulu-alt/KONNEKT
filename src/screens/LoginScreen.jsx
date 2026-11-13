@@ -8,14 +8,35 @@ export default function LoginScreen({ navigation }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const login = async () => {
-    setError('');
-    if (!email.trim() || !password) return setError('Enter your email address and password.');
-    setBusy(true);
-    const { error: authError } = await supabase.auth.signInWithPassword({ email: email.trim().toLowerCase(), password });
+
+const login = async () => {
+  setError('');
+
+  if (!email.trim() || !password) {
+    return setError('Enter your email address and password.');
+  }
+
+  setBusy(true);
+
+  try {
+    const { error: authError } = await supabase.auth.signInWithPassword({
+      email: email.trim().toLowerCase(),
+      password
+    });
+
+    if (authError) {
+      setError(authError.message);
+      return;
+    }
+
+    navigation.replace('Reels');
+
+  } catch (err) {
+    setError(err.message || 'Login failed. Please try again.');
+  } finally {
     setBusy(false);
-    if (authError) setError(authError.message);
-  };
+  }
+};
 
   const resetPassword = async () => {
     if (!email.trim()) return setError('Enter your email address first.');
