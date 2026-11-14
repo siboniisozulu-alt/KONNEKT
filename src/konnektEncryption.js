@@ -1,4 +1,4 @@
-import { supabase } from '../lib_supabase';
+import { supabase } from './lib_supabase';
 
 const DB_NAME = 'konnekt-secure-keys';
 const STORE_NAME = 'identities';
