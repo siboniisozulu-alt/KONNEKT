@@ -204,7 +204,7 @@ try {
 } finally {
   setSending(false);
 }
-
+  };
 
   const attach = async () => {
     try {
