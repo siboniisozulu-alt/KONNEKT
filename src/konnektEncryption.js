@@ -194,11 +194,59 @@ export async function restoreKonnektKeyBackup(passphrase) {
   try { payload = JSON.parse(decoder.decode(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: fromBase64(row.iv) }, key, fromBase64(row.ciphertext)))); }
   catch { throw new Error('Recovery passphrase is incorrect or the backup is damaged.'); }
   if (payload.userId !== user.id || !payload.publicJwk || !payload.privateKey) throw new Error('Recovery backup does not match this signed-in account.');
-  const privateKey = await crypto.subtle.importKey('pkcs8', fromBase64(payload.privateKey), { name: 'ECDH', namedCurve: 'P-256' }, false, ['deriveKey']);
-  await saveKey(user.id, { privateKey, publicJwk: payload.publicJwk });
-  const publicKey = JSON.stringify(payload.publicJwk);
-  const { error: profileError } = await supabase.from('profiles').update({ encryption_public_key: publicKey }).eq('id', user.id);
-  if (profileError) throw profileError;
+ 
+const publicKey = JSON.stringify(payload.publicJwk);
+
+// Never silently overwrite a different key on this device.
+const existingIdentity = await readKey(user.id);
+
+if (
+  existingIdentity?.publicJwk &&
+  JSON.stringify(existingIdentity.publicJwk) !== publicKey
+) {
+  throw new Error(
+    'A different encryption identity is already stored on this device. KONNEKT has not overwritten it. Use the original device or contact support before changing encryption keys.'
+  );
+}
+
+// Confirm the backup matches the account's registered public key.
+const { data: profile, error: profileReadError } = await supabase
+  .from('profiles')
+  .select('encryption_public_key')
+  .eq('id', user.id)
+  .maybeSingle();
+
+if (profileReadError) throw profileReadError;
+
+if (
+  profile?.encryption_public_key &&
+  profile.encryption_public_key !== publicKey
+) {
+  throw new Error(
+    'This recovery backup does not match the encryption key registered to your account. No local or server key was changed.'
+  );
+}
+
+const privateKey = await crypto.subtle.importKey(
+  'pkcs8',
+  fromBase64(payload.privateKey),
+  { name: 'ECDH', namedCurve: 'P-256' },
+  false,
+  ['deriveKey']
+);
+
+await saveKey(user.id, {
+  privateKey,
+  publicJwk: payload.publicJwk
+});
+
+const { error: profileError } = await supabase
+  .from('profiles')
+  .update({ encryption_public_key: publicKey })
+  .eq('id', user.id);
+
+if (profileError) throw profileError;
+
   return true;
 }
 export async function getKonnektIdentityFingerprint(publicJwk) {
