@@ -1,3 +1,4 @@
+
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { AuthProvider, useAuth } from './src/AuthContext';
 import {
@@ -60,7 +61,6 @@ function AppShell() {
   const [lightMode, setLightMode] = useState(false);
   const seenIncomingCalls = React.useRef(new Set());
 
-  // Keep the welcome and password-recovery screens in sync with authentication.
   useEffect(() => {
     if (!loading) {
       setStack([{
@@ -70,7 +70,6 @@ function AppShell() {
     }
   }, [loading, recovery]);
 
-  // Listen for incoming one-to-one and group calls.
   useEffect(() => {
     if (!user?.id) return;
 
@@ -119,7 +118,6 @@ function AppShell() {
       );
     };
 
-    // Check whether a call is already ringing.
     supabase
       .from('call_sessions')
       .select('*')
@@ -133,7 +131,6 @@ function AppShell() {
         }
       });
 
-    // Handle incoming group-call invitations.
     const showGroupInvite = async invite => {
       if (
         !active ||
@@ -195,7 +192,6 @@ function AppShell() {
       );
     };
 
-    // Subscribe to new incoming calls and group invitations.
     const channel = supabase
       .channel(`incoming-calls-${user.id}`)
       .on(
@@ -220,7 +216,6 @@ function AppShell() {
       )
       .subscribe();
 
-    // Check for an invitation that arrived before this screen loaded.
     supabase
       .from('group_call_participants')
       .select('call_id,user_id,status')
@@ -238,104 +233,327 @@ function AppShell() {
     };
   }, [user?.id]);
 
-  const currentRoute = stack[stack.length - 1] || { name: 'Welcome', params: {} };
+  const currentRoute = stack[stack.length - 1] || {
+    name: 'Welcome',
+    params: {}
+  };
 
-  const navigate = useCallback((name, params = {}) => { setStack(previous => [...previous, { name, params }]); }, []);
-  const goBack = useCallback(() => { setStack(previous => previous.length > 1 ? previous.slice(0, -1) : previous); }, []);
-  const replace = useCallback((name, params = {}) => { setStack(previous => [...previous.slice(0, -1), { name, params }]); }, []);
-  const navigation = useMemo(() => ({ navigate, goBack, replace, getParam: name => currentRoute.params?.[name] }), [navigate, goBack, replace, currentRoute.params]);
+  const navigate = useCallback((name, params = {}) => {
+    setStack(previous => [...previous, { name, params }]);
+  }, []);
 
-  const openTab = useCallback(name => { setStack([{ name, params: {} }]); }, []);
+  const goBack = useCallback(() => {
+    setStack(previous =>
+      previous.length > 1 ? previous.slice(0, -1) : previous
+    );
+  }, []);
+
+  const replace = useCallback((name, params = {}) => {
+    setStack(previous => [
+      ...previous.slice(0, -1),
+      { name, params }
+    ]);
+  }, []);
+
+  const navigation = useMemo(() => ({
+    navigate,
+    goBack,
+    replace,
+    getParam: name => currentRoute.params?.[name]
+  }), [navigate, goBack, replace, currentRoute.params]);
+
+  const openTab = useCallback(name => {
+    setStack([{ name, params: {} }]);
+  }, []);
 
   const screenKey = routeAliases[currentRoute.name] || currentRoute.name;
   const ActiveScreen = screenRegistry[screenKey];
   const isMainTab = tabs.some(tab => tab.name === currentRoute.name);
 
-  if (loading) return (
-    <SafeAreaView style={styles.container}>
-      <View style={styles.missingScreen}><Text style={styles.missingTitle}>KONNEKT</Text><Text style={styles.missingText}>Connecting securely…</Text></View>
-    </SafeAreaView>
-  );
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.missingScreen}>
+          <Text style={styles.missingTitle}>KONNEKT</Text>
+          <Text style={styles.missingText}>Connecting securely…</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   return (
-    <SafeAreaView className={lightMode ? 'konnekt-light' : 'konnekt-dark'} style={[styles.container, lightMode && styles.lightContainer]} testID="konnekt-app-shell">
-      <StatusBar backgroundColor={lightMode ? '#F7F3FC' : '#10091B'} barStyle={lightMode ? 'dark-content' : 'light-content'} />
+    <SafeAreaView
+      className={lightMode ? 'konnekt-light' : 'konnekt-dark'}
+      style={[styles.container, lightMode && styles.lightContainer]}
+      testID="konnekt-app-shell"
+    >
+      <StatusBar
+        backgroundColor={lightMode ? '#F7F3FC' : '#10091B'}
+        barStyle={lightMode ? 'dark-content' : 'light-content'}
+      />
+
       {isMainTab && session && (
-        <View style={styles.brandBar}>
-          <View style={styles.brandMark}><Text style={styles.brandMarkText}>K</Text></View>
-          <View style={styles.brandCopy}><Text style={styles.brandName}>KONNEKT</Text><Text style={styles.brandTagline}>Connecting people everywhere.</Text></View>
-          <TouchableOpacity accessibilityRole="button" accessibilityLabel={lightMode ? 'Switch to dark mode' : 'Switch to light mode'} style={styles.themeToggle} onPress={() => setLightMode(value => !value)}>
-            <Text style={styles.themeToggleText}>{lightMode ? '☾' : '☀'}</Text>
-          </TouchableOpacity>
-        </View>
+        <>
+          {/* KONNEKT BRAND HEADER */}
+          <View style={styles.brandBar}>
+            <View style={styles.brandMark}>
+              <Text style={styles.brandMarkText}>K</Text>
+            </View>
+
+            <View style={styles.brandCopy}>
+              <Text style={styles.brandName}>KONNEKT</Text>
+              <Text style={styles.brandTagline}>
+                Connecting people everywhere.
+              </Text>
+            </View>
+
+            <TouchableOpacity
+              accessibilityRole="button"
+              accessibilityLabel={
+                lightMode ? 'Switch to dark mode' : 'Switch to light mode'
+              }
+              style={styles.themeToggle}
+              onPress={() => setLightMode(value => !value)}
+            >
+              <Text style={styles.themeToggleText}>
+                {lightMode ? '☾' : '☀'}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* TOP NAVIGATION BAR */}
+          <View style={styles.tabBar} accessibilityRole="tablist">
+            {tabs.map(tab => {
+              const active = currentRoute.name === tab.name;
+
+              return (
+                <TouchableOpacity
+                  key={tab.name}
+                  accessibilityRole="button"
+                  accessibilityLabel={tab.name}
+                  accessibilityState={{ selected: active }}
+                  style={[styles.tab, active && styles.activeTab]}
+                  onPress={() => openTab(tab.name)}
+                >
+                  <Text
+                    style={[
+                      styles.tabIcon,
+                      active && styles.activeTabIcon
+                    ]}
+                  >
+                    {tabIcons[tab.icon] || '•'}
+                  </Text>
+
+                  <Text
+                    style={[
+                      styles.tabLabel,
+                      active && styles.activeTabLabel
+                    ]}
+                  >
+                    {tab.name}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </View>
+        </>
       )}
+
+      {/* MAIN SCREEN CONTENT */}
       <View style={styles.screen}>
         {ActiveScreen ? (
           <ActiveScreen
             navigation={navigation}
-            route={{ name: currentRoute.name, params: currentRoute.params || {} }}
+            route={{
+              name: currentRoute.name,
+              params: currentRoute.params || {}
+            }}
             user={user}
             session={session}
           />
         ) : (
           <View style={styles.missingScreen}>
-            <Text style={styles.missingTitle}>{currentRoute.name}</Text>
-            <Text style={styles.missingText}>This feature is not available in this build.</Text>
-            <TouchableOpacity accessibilityRole="button" style={styles.backButton} onPress={navigation.goBack}>
+            <Text style={styles.missingTitle}>
+              {currentRoute.name}
+            </Text>
+
+            <Text style={styles.missingText}>
+              This feature is not available in this build.
+            </Text>
+
+            <TouchableOpacity
+              accessibilityRole="button"
+              style={styles.backButton}
+              onPress={navigation.goBack}
+            >
               <Text style={styles.backText}>← Go back</Text>
             </TouchableOpacity>
           </View>
         )}
       </View>
-
-      {isMainTab && session && (
-        <View style={styles.tabBar} accessibilityRole="tablist">
-          {tabs.map(tab => {
-            const active = currentRoute.name === tab.name;
-            return (
-              <TouchableOpacity
-                key={tab.name}
-                accessibilityRole="button"
-                accessibilityLabel={tab.name}
-                accessibilityState={{ selected: active }}
-                style={[styles.tab, active && styles.activeTab]}
-                onPress={() => openTab(tab.name)}
-              >
-                <Text style={[styles.tabIcon, active && styles.activeTabIcon]}>{tabIcons[tab.icon] || '•'}</Text>
-                <Text style={[styles.tabLabel, active && styles.activeTabLabel]}>{tab.name}</Text>
-              </TouchableOpacity>
-            );
-          })}
-        </View>
-      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, minHeight: '100vh', backgroundColor: '#10091B' },
-  lightContainer: { backgroundColor: '#F7F3FC' },
-  brandBar: { minHeight: 58, paddingHorizontal: 16, flexDirection: 'row', alignItems: 'center', backgroundColor: '#170D26', borderBottomWidth: 1, borderBottomColor: '#39244B' },
-  brandMark: { width: 34, height: 34, borderRadius: 12, backgroundColor: '#6A0DAD', borderWidth: 1, borderColor: '#FFC107', alignItems: 'center', justifyContent: 'center' },
-  brandMarkText: { color: '#FFFFFF', fontWeight: '900', fontSize: 19 },
-  brandCopy: { marginLeft: 10, flex: 1 },
-  brandName: { color: '#FFFFFF', fontWeight: '900', letterSpacing: 2, fontSize: 14 },
-  brandTagline: { color: '#BBA9CC', fontSize: 9, marginTop: 2 },
-  themeToggle: { width: 36, height: 36, borderRadius: 18, backgroundColor: '#30203F', alignItems: 'center', justifyContent: 'center' },
-  themeToggleText: { color: '#FFC107', fontSize: 21 },
-  screen: { flex: 1, minHeight: 0 },
-  tabBar: { minHeight: 68, flexDirection: 'row', backgroundColor: '#170D26', borderTopWidth: 1, borderTopColor: '#39244B', justifyContent: 'space-around', alignItems: 'center', paddingBottom: 6 },
-  tab: { flex: 1, alignItems: 'center', justifyContent: 'center', minHeight: 58, paddingHorizontal: 2, borderTopWidth: 2, borderTopColor: 'transparent' },
-  activeTab: { borderTopColor: '#FF6B00' },
-  tabIcon: { color: '#A998B8', fontSize: 18, marginBottom: 2 },
-  activeTabIcon: { color: '#FFC107' },
-  tabLabel: { color: '#A998B8', fontSize: 9, fontWeight: '600' },
-  activeTabLabel: { color: '#FFC107' },
-  missingScreen: { flex: 1, backgroundColor: '#10091B', justifyContent: 'center', alignItems: 'center', padding: 25 },
-  missingTitle: { color: '#FFFFFF', fontSize: 24, fontWeight: 'bold' },
-  missingText: { color: '#B8C4D4', marginTop: 12, textAlign: 'center' },
-  backButton: { backgroundColor: '#FF6B00', padding: 14, borderRadius: 10, marginTop: 20 },
-  backText: { color: '#FFFFFF', fontWeight: 'bold' }
+  container: {
+    flex: 1,
+    minHeight: '100vh',
+    backgroundColor: '#10091B'
+  },
+
+  lightContainer: {
+    backgroundColor: '#F7F3FC'
+  },
+
+  brandBar: {
+    minHeight: 58,
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#170D26',
+    borderBottomWidth: 1,
+    borderBottomColor: '#39244B'
+  },
+
+  brandMark: {
+    width: 34,
+    height: 34,
+    borderRadius: 12,
+    backgroundColor: '#6A0DAD',
+    borderWidth: 1,
+    borderColor: '#FFC107',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+
+  brandMarkText: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    fontSize: 19
+  },
+
+  brandCopy: {
+    marginLeft: 10,
+    flex: 1
+  },
+
+  brandName: {
+    color: '#FFFFFF',
+    fontWeight: '900',
+    letterSpacing: 2,
+    fontSize: 14
+  },
+
+  brandTagline: {
+    color: '#BBA9CC',
+    fontSize: 9,
+    marginTop: 2
+  },
+
+  themeToggle: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: '#30203F',
+    alignItems: 'center',
+    justifyContent: 'center'
+  },
+
+  themeToggleText: {
+    color: '#FFC107',
+    fontSize: 21
+  },
+
+  /* TOP NAVIGATION */
+  tabBar: {
+    minHeight: 62,
+    flexDirection: 'row',
+    backgroundColor: '#170D26',
+    borderBottomWidth: 1,
+    borderBottomColor: '#39244B',
+    justifyContent: 'space-around',
+    alignItems: 'stretch',
+    paddingHorizontal: 2
+  },
+
+  tab: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 60,
+    paddingHorizontal: 1,
+    borderBottomWidth: 3,
+    borderBottomColor: 'transparent'
+  },
+
+  activeTab: {
+    borderBottomColor: '#FF6B00'
+  },
+
+  tabIcon: {
+    color: '#A998B8',
+    fontSize: 18,
+    marginBottom: 3
+  },
+
+  activeTabIcon: {
+    color: '#FFC107'
+  },
+
+  tabLabel: {
+    color: '#A998B8',
+    fontSize: 9,
+    fontWeight: '600'
+  },
+
+  activeTabLabel: {
+    color: '#FFC107'
+  },
+
+  screen: {
+    flex: 1,
+    minHeight: 0
+  },
+
+  missingScreen: {
+    flex: 1,
+    backgroundColor: '#10091B',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 25
+  },
+
+  missingTitle: {
+    color: '#FFFFFF',
+    fontSize: 24,
+    fontWeight: 'bold'
+  },
+
+  missingText: {
+    color: '#B8C4D4',
+    marginTop: 12,
+    textAlign: 'center'
+  },
+
+  backButton: {
+    backgroundColor: '#FF6B00',
+    padding: 14,
+    borderRadius: 10,
+    marginTop: 20
+  },
+
+  backText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold'
+  }
 });
 
-export default function App() { return <AuthProvider><AppShell /></AuthProvider>; }
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppShell />
+    </AuthProvider>
+  );
+  }
+    
