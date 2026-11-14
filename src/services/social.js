@@ -13,6 +13,8 @@ export async function getMyProfile(userId) {
 }
 
 export async function getConversationList(userId) {
+  if (!userId) return [];
+
   const { data: memberships, error } = await supabase
     .from('conversation_members')
     .select('conversation_id')
@@ -20,52 +22,73 @@ export async function getConversationList(userId) {
 
   if (error) throw error;
 
-  const ids = (memberships || []).map((item) => item.conversation_id);
+  const ids = (memberships || []).map(
+    item => item.conversation_id
+  );
 
   if (!ids.length) return [];
 
-  const { data: conversations, error: convError } = await supabase
-    .from('conversations')
-    .select('id, title, is_group, created_at')
-    .in('id', ids)
-    .order('created_at', { ascending: false });
+  const { data: conversations, error: convError } =
+    await supabase
+      .from('conversations')
+      .select('id,title,is_group,created_at')
+      .in('id', ids)
+      .order('created_at', { ascending: false });
 
   if (convError) throw convError;
 
   const rows = await Promise.all(
-    (conversations || []).map(async (conversation) => {
-      const { data: members, error: membersError } = await supabase
-        .from('conversation_members')
-        .select('user_id')
-        .eq('conversation_id', conversation.id);
+    (conversations || []).map(async conversation => {
+      const { data: members, error: membersError } =
+        await supabase
+          .from('conversation_members')
+          .select('user_id')
+          .eq('conversation_id', conversation.id);
 
       if (membersError) throw membersError;
 
       const otherIds = (members || [])
-        .map((member) => member.user_id)
-        .filter((id) => id !== userId);
+        .map(member => member.user_id)
+        .filter(id => id !== userId);
 
       let profiles = [];
 
       if (otherIds.length) {
-        const { data, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, username, full_name, avatar_url')
-          .in('id', otherIds);
+        const { data, error: profilesError } =
+          await supabase
+            .from('profiles')
+            .select('id,username,full_name,avatar_url')
+            .in('id', otherIds);
 
         if (profilesError) throw profilesError;
+
         profiles = data || [];
       }
 
-      const { data: last, error: lastError } = await supabase
-        .from('messages')
-        .select('body, created_at')
-        .eq('conversation_id', conversation.id)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
+      const { data: last, error: lastError } =
+        await supabase
+          .from('messages')
+          .select('body,created_at,is_encrypted,media_path,media_encrypted')
+          .eq('conversation_id', conversation.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
       if (lastError) throw lastError;
+
+      let lastMessage = 'Start a conversation';
+
+      if (last) {
+        if (last.is_encrypted) {
+          lastMessage = '🔒 Encrypted message';
+        } else if (last.media_path && last.media_encrypted) {
+          lastMessage = '🔒 Encrypted attachment';
+        } else if (last.media_path) {
+          lastMessage = '📎 Attachment';
+        } else {
+          lastMessage = last.body || 'New message';
+        }
+      }
 
       return {
         ...conversation,
@@ -73,11 +96,15 @@ export async function getConversationList(userId) {
         displayName:
           conversation.title ||
           profiles
-            .map((profile) => profile.full_name || profile.username || 'KONNEKT user')
+            .map(profile =>
+              profile.full_name ||
+              profile.username ||
+              'KONNEKT user'
+            )
             .join(', ') ||
           'Conversation',
-        lastMessage: last?.body || 'Start a conversation',
-        lastAt: last?.created_at || conversation.created_at,
+        lastMessage,
+        lastAt: last?.created_at || conversation.created_at
       };
     })
   );
@@ -92,30 +119,36 @@ export async function createDirectConversation(myId, otherId) {
 
   const {
     data: { user },
-    error: authError,
+    error: authError
   } = await supabase.auth.getUser();
 
   if (authError) throw authError;
 
   if (!user) {
-    throw new Error('Please sign in before starting a conversation.');
+    throw new Error(
+      'Please sign in before starting a conversation.'
+    );
   }
 
   if (user.id !== myId) {
-    throw new Error('Your session has changed. Please sign in again.');
+    throw new Error(
+      'Your session has changed. Please sign in again.'
+    );
   }
 
   const { data, error } = await supabase.rpc(
     'create_direct_conversation',
     {
-      target_user_id: otherId,
+      target_user_id: otherId
     }
   );
 
   if (error) throw error;
 
   if (!data) {
-    throw new Error('Supabase did not return a conversation ID.');
+    throw new Error(
+      'Supabase did not return a conversation ID.'
+    );
   }
 
   return data;
@@ -127,5 +160,6 @@ export async function getSignedChatMedia(path) {
     .createSignedUrl(path, 3600);
 
   if (error) throw error;
+
   return data.signedUrl;
 }
