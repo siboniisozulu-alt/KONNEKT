@@ -1,13 +1,14 @@
 
-const CACHE = 'konnekt-pwa-v2';
+const CACHE = 'konnekt-pwa-v3';
+const APP_ROOT = new URL('./', self.location.href).pathname;
 
 const CORE = [
-  './',
-  './index.html',
-  './manifest.webmanifest',
-  './konnekt-192.png',
-  './konnekt-512.png',
-  './konnekt.svg'
+  APP_ROOT,
+  `${APP_ROOT}index.html`,
+  `${APP_ROOT}manifest.webmanifest`,
+  `${APP_ROOT}konnekt-192.png`,
+  `${APP_ROOT}konnekt-512.png`,
+  `${APP_ROOT}konnekt.svg`
 ];
 
 self.addEventListener('install', event => {
@@ -23,7 +24,7 @@ self.addEventListener('activate', event => {
     caches.keys()
       .then(keys => Promise.all(
         keys
-          .filter(key => key.startsWith('konnekt-') && key !== CACHE)
+          .filter(key => key.startsWith('konnekt-pwa-') && key !== CACHE)
           .map(key => caches.delete(key))
       ))
       .then(() => self.clients.claim())
@@ -34,7 +35,11 @@ self.addEventListener('fetch', event => {
   const request = event.request;
   const url = new URL(request.url);
 
-  if (request.method !== 'GET' || url.origin !== self.location.origin) {
+  if (
+    request.method !== 'GET' ||
+    url.origin !== self.location.origin ||
+    !url.pathname.startsWith(APP_ROOT)
+  ) {
     return;
   }
 
@@ -48,9 +53,15 @@ self.addEventListener('fetch', event => {
         return response;
       })
       .catch(() =>
-        caches.match(request).then(
-          hit => hit || caches.match('./index.html')
-        )
+        caches.match(request).then(hit => {
+          if (hit) return hit;
+
+          if (request.mode === 'navigate') {
+            return caches.match(`${APP_ROOT}index.html`);
+          }
+
+          return Response.error();
+        })
       )
   );
 });
@@ -59,7 +70,7 @@ self.addEventListener('push', event => {
   let payload = {
     title: 'KONNEKT',
     body: 'You have a new notification.',
-    url: './'
+    url: APP_ROOT
   };
 
   try {
@@ -73,9 +84,9 @@ self.addEventListener('push', event => {
   event.waitUntil(
     self.registration.showNotification(payload.title, {
       body: payload.body,
-      icon: './konnekt-192.png',
-      badge: './konnekt-192.png',
-      data: { url: payload.url || './' },
+      icon: `${APP_ROOT}konnekt-192.png`,
+      badge: `${APP_ROOT}konnekt-192.png`,
+      data: { url: payload.url || APP_ROOT },
       tag: payload.tag || 'konnekt-notification'
     })
   );
@@ -85,7 +96,7 @@ self.addEventListener('notificationclick', event => {
   event.notification.close();
 
   const target = new URL(
-    event.notification.data?.url || './',
+    event.notification.data?.url || APP_ROOT,
     self.registration.scope
   ).href;
 
