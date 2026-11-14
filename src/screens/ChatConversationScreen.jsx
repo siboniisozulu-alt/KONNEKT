@@ -129,29 +129,82 @@ export default function ChatConversationScreen({ navigation, route }) {
   }, [load, conversationId, user?.id, otherMember?.id]);
 
   const send = async (extra = {}) => {
-    const body = message.trim();
-    if ((!body && !extra.media_path) || !user?.id) return;
-    setSending(true); setNotice('');
-    try {
-      let payload = { conversation_id: conversationId, sender_id: user.id, body: body || (extra.media_type === 'image' ? 'Photo' : extra.media_type === 'audio' ? 'Voice note' : 'Encrypted attachment'), ...extra };
-      if (body) {
-        if (isGroup) {
-          const groupKey = await getGroupKonnektCryptoKey(conversationId, user.id);
-          if (!groupKey) throw new Error('Secure group encryption is not ready. All group members must open KONNEKT first.');
-          payload = { ...payload, ...(await encryptWithKonnektCryptoKey(groupKey, body)), encryption_version: 1 };
-        } else {
-          if (!otherMember?.id || !otherMember.encryption_public_key) throw new Error('Secure messaging is not ready yet. Ask the other member to open KONNEKT after the database upgrade.');
-          const encrypted = await encryptKonnektText({ userId: user.id, otherUserId: otherMember.id, otherPublicKey: otherMember.encryption_public_key, text: body });
-          payload = { ...payload, ...encrypted };
-        }
-      }
-      const { error } = await supabase.from('messages').insert(payload);
-      if (error) throw error;
-      setMessage('');
-      await load();
-    } catch (e) { setNotice(e?.message || 'Message could not be sent.'); }
-    finally { setSending(false); }
+   
+const body = message.trim();
+
+if ((!body && !extra.media_path) || !user?.id) return;
+
+// Encrypt attachment-only placeholders as well.
+const contentToEncrypt = body || (extra.media_path ? 'Attachment' : '');
+
+setSending(true);
+setNotice('');
+
+try {
+  let payload = {
+    conversation_id: conversationId,
+    sender_id: user.id,
+    body: contentToEncrypt,
+    ...extra
   };
+
+  if (contentToEncrypt) {
+    if (isGroup) {
+      const groupKey = await getGroupKonnektCryptoKey(
+        conversationId,
+        user.id
+      );
+
+      if (!groupKey) {
+        throw new Error(
+          'Secure group encryption is not ready. All group members must open KONNEKT first.'
+        );
+      }
+
+      payload = {
+        ...payload,
+        ...(await encryptWithKonnektCryptoKey(
+          groupKey,
+          contentToEncrypt
+        )),
+        encryption_version: 1
+      };
+    } else {
+      if (!otherMember?.id || !otherMember.encryption_public_key) {
+        throw new Error(
+          'Secure messaging is not ready yet. Ask the other member to open KONNEKT after the database upgrade.'
+        );
+      }
+
+      const encrypted = await encryptKonnektText({
+        userId: user.id,
+        otherUserId: otherMember.id,
+        otherPublicKey: otherMember.encryption_public_key,
+        text: contentToEncrypt
+      });
+
+      payload = {
+        ...payload,
+        ...encrypted
+      };
+    }
+  }
+
+  const { error } = await supabase
+    .from('messages')
+    .insert(payload);
+
+  if (error) throw error;
+
+  setMessage('');
+  await load();
+
+} catch (e) {
+  setNotice(e?.message || 'Message could not be sent.');
+} finally {
+  setSending(false);
+}
+
 
   const attach = async () => {
     try {
