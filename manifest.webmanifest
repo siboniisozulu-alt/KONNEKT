@@ -1,33 +1,35 @@
 
 {
-  "id": "./",
+  "id": "/KONNEKT/",
   "name": "KONNEKT — Connecting people everywhere",
   "short_name": "KONNEKT",
   "description": "Connect, chat, share status updates, discover people and watch Reels.",
-  "start_url": "./",
-  "scope": "./",
+  "start_url": "/KONNEKT/?source=pwa",
+  "scope": "/KONNEKT/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "orientation": "portrait",
   "background_color": "#07050d",
   "theme_color": "#0b0715",
+  "prefer_related_applications": false,
   "icons": [
     {
-      "src": "./konnekt-192.png",
+      "src": "/KONNEKT/konnekt-192.png",
       "sizes": "192x192",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./konnekt-512.png",
+      "src": "/KONNEKT/konnekt-512.png",
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "./konnekt.svg",
-      "sizes": "any",
-      "type": "image/svg+xml",
-      "purpose": "any"
+      "src": "/KONNEKT/konnekt-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
     }
   ]
 }
